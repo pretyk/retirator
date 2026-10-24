@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Retirator — סימולטור ישראלי לפרישה מוקדמת ולתקופת הגישור. בוחנים תרחישים, מבינים את ההנחות, והנתונים נשארים בדפדפן. סימולציה בלבד, לא ייעוץ פיננסי.">
+  <meta name="theme-color" content="#0c1220">
+  <title>Retirator — פחות סימני שאלה בדרך לפרישה</title>
+  <style>
+    :root { color-scheme: dark; font-family: Arial, sans-serif; color: #f2f5ff; background: #0c1220; line-height: 1.65; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: inherit; text-underline-offset: .25em; }
+    a:hover { color: #a9f3d4; }
+    a:focus-visible, summary:focus-visible { outline: 3px solid #a9f3d4; outline-offset: 5px; }
+    h1, h2, h3, p, figure { margin: 0; }
+    h1, h2, h3 { line-height: 1.18; text-wrap: balance; }
+    p { text-wrap: pretty; }
+    img { display: block; max-width: 100%; height: auto; }
+    .wrap { width: min(1160px, calc(100% - 48px)); margin-inline: auto; }
+    .skip { position: absolute; inset-inline-start: 16px; top: -100px; z-index: 3; padding: 12px 20px; background: #a9f3d4; color: #0c1220; }
+    .skip:focus { top: 12px; }
+    header { border-bottom: 1px solid #283247; }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 88px; }
+    .brand { font-size: 26px; font-weight: 800; letter-spacing: -1px; text-decoration: none; }
+    .brand span { color: #a9f3d4; }
+    nav { display: flex; align-items: center; gap: 24px; }
+    nav a, footer a { display: inline-flex; align-items: center; min-height: 44px; }
+    nav a { font-size: 15px; text-decoration: none; }
+    .hero { padding-block: 84px 48px; position: relative; }
+    .hero::before { content: ""; position: absolute; z-index: -1; inset: 0; background: radial-gradient(ellipse at 15% 20%, #28375980, transparent 65%); }
+    .hero-grid { display: grid; grid-template-columns: 1.3fr 1fr; align-items: center; gap: 56px; }
+    .eyebrow { color: #a9f3d4; font-size: 14px; font-weight: 700; letter-spacing: .04em; margin-bottom: 20px; }
+    h1 { font-size: clamp(40px, 5.2vw, 68px); letter-spacing: -2px; }
+    h1 span { color: #a9f3d4; }
+    .lead { color: #bdc9df; font-size: 20px; max-width: 580px; margin-top: 24px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .button { display: inline-flex; justify-content: center; align-items: center; gap: 16px; min-height: 50px; padding: 12px 22px; border-radius: 12px; border: 1px solid #45526b; font-weight: 700; text-decoration: none; transition: transform .2s, background .2s; }
+    .button:hover { transform: translateY(-2px); background: #202d43; color: #fff; }
+    .primary { color: #0c1220; background: #a9f3d4; border-color: #a9f3d4; }
+    .primary:hover { background: #c9ffe7; color: #0c1220; }
+    .small-note { color: #b5c1d5; font-size: 14px; margin-top: 18px; }
+    .journey { padding: 32px; border: 1px solid #3c4860; border-radius: 24px; background: linear-gradient(140deg, #1d2941, #111b2c); transform: rotate(-2deg); }
+    .journey-title { font-size: 18px; font-weight: 700; }
+    .journey-subtitle { color: #b5c1d5; font-size: 14px; margin-top: 8px; }
+    .journey ol { list-style: none; margin: 28px 0 0; padding: 0; position: relative; }
+    .journey ol::before { content: ""; position: absolute; inset-inline-start: 19px; top: 20px; bottom: 28px; width: 2px; background: #799bdd; transform-origin: top; animation: draw-line 1.2s ease-out both; }
+    .journey li { display: flex; gap: 18px; align-items: start; position: relative; padding-bottom: 24px; }
+    .journey li:last-child { padding-bottom: 0; }
+    .step-number { display: grid; place-items: center; flex: 0 0 40px; height: 40px; border-radius: 50%; background: #23354b; color: #b9f7dd; border: 1px solid #7189aa; font-weight: 700; }
+    .journey strong { display: block; font-size: 18px; }
+    .journey li p { color: #bdc9df; font-size: 15px; margin-top: 4px; }
+    .preview { margin-top: 60px; animation: arrive .8s ease-out both; }
+    .window { padding: 10px; border: 1px solid #43516d; border-radius: 20px; background: #182238; box-shadow: 0 24px 70px #0005; }
+    .window-bar { display: flex; align-items: center; justify-content: space-between; padding: 3px 8px 12px; gap: 16px; color: #c1cce0; font-size: 13px; }
+    .dots { display: flex; gap: 5px; }
+    .dots i { width: 7px; height: 7px; border-radius: 50%; background: #7c90b1; }
+    .window img { width: 100%; border-radius: 10px; }
+    .preview-link { display: block; border-radius: 10px; }
+    figcaption { color: #b5c1d5; font-size: 14px; margin-top: 16px; }
+    .facts { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding-block: 32px; color: #d2dbeb; border-bottom: 1px solid #283247; }
+    .facts span::before { content: "✓"; color: #a9f3d4; margin-inline-end: 10px; }
+    .section { padding-block: 80px; }
+    h2 { font-size: clamp(30px, 3.5vw, 44px); letter-spacing: -1px; }
+    .section-intro { margin-top: 20px; max-width: 650px; color: #bdc9df; font-size: 18px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 36px; }
+    .card { padding: 28px; background: #141e30; border: 1px solid #344159; border-radius: 18px; }
+    .card-label { font-size: 14px; color: #a9f3d4; margin-bottom: 24px; }
+    h3 { font-size: 23px; }
+    .card p { color: #bdc9df; margin-top: 16px; }
+    .mobile-section { display: grid; grid-template-columns: 1fr 340px; align-items: center; gap: 100px; border-block: 1px solid #283247; }
+    .mobile-section .copy { max-width: 600px; }
+    .mobile-section p { color: #bdc9df; font-size: 18px; margin-top: 24px; }
+    .phone { width: 280px; margin-inline: auto; padding: 8px; border: 1px solid #52617e; border-radius: 30px; background: #182238; box-shadow: 0 24px 60px #0004; }
+    .phone img { border-radius: 22px; width: 100%; }
+    .mobile-section figcaption { text-align: center; }
+    .privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+    .privacy p { color: #bdc9df; margin-top: 20px; font-size: 18px; }
+    details { padding-block: 20px; border-bottom: 1px solid #344159; }
+    summary { cursor: pointer; font-size: 18px; font-weight: 700; min-height: 44px; padding-block: 8px; }
+    details p { font-size: 16px !important; margin-top: 8px !important; }
+    .closing { padding: 44px; border-radius: 24px; border: 1px solid #405b68; background: linear-gradient(120deg, #1b3039, #182238); }
+    .closing p { color: #d0daeb; margin-top: 20px; max-width: 850px; }
+    .closing .actions { margin-top: 24px; }
+    footer { padding-block: 40px; color: #b5c1d5; font-size: 14px; }
+    .footer-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    footer p { margin-top: 16px; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes draw-line { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+    @media (max-width: 800px) {
+      .hero { padding-top: 48px; }
+      .hero-grid, .privacy { grid-template-columns: 1fr; gap: 36px; }
+      .journey { transform: none; }
+      .cards { grid-template-columns: 1fr; }
+      .mobile-section { grid-template-columns: 1fr 260px; gap: 32px; }
+      .phone { width: 240px; }
+      .section { padding-block: 56px; }
+      .nav { flex-wrap: wrap; padding-block: 14px; gap: 4px 20px; }
+      nav { gap: 18px; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: calc(100% - 32px); }
+      nav { width: 100%; justify-content: space-between; gap: 8px; }
+      nav a { font-size: 14px; }
+      h1 { letter-spacing: -1px; }
+      .lead { font-size: 18px; }
+      .journey { padding: 24px; }
+      .preview { margin-top: 36px; }
+      .window { padding: 5px; border-radius: 12px; }
+      .window-bar { font-size: 12px; }
+      .facts { justify-content: start; gap: 12px 24px; }
+      .mobile-section { grid-template-columns: 1fr; }
+      .phone { width: 280px; max-width: 100%; }
+      .closing { padding: 26px; }
+      .actions .button { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .button:hover { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">דילוג לתוכן</a>
+  <header>
+    <div class="wrap nav">
+      <a class="brand" href="#main" aria-label="Retirator — לתוכן הראשי" dir="ltr">retir<span>ator</span></a>
+      <nav aria-label="ניווט ראשי">
+        <a href="#features">איך זה עובד</a>
+        <a href="#privacy">פרטיות ושקיפות</a>
+        <a href="https://github.com/pretyk/retirator" rel="noopener noreferrer">הקוד ב־<bdi>GitHub</bdi></a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">סימולטור ישראלי לפרישה מוקדמת</p>
+            <h1 id="hero-title">פחות סימני שאלה.<br><span>יותר מקום לאפשרויות.</span></h1>
+            <p class="lead">איך עשויה להיראות התקופה שבין העבודה לפנסיה? בונים תרחיש, משנים הנחות ורואים את ההשפעה המשוערת — בלי הרשמה ובלי להזין נתונים לשרת.</p>
+            <div class="actions">
+              <a class="button primary" href="https://nice-pebble-0150fe203.2.azurestaticapps.net" rel="noopener noreferrer">לפתיחת הסימולטור <span aria-hidden="true">←</span></a>
+              <a class="button" href="#preview">הצצה לפני שמתחילים</a>
+            </div>
+            <p class="small-note">כלי ללמידה ולהמחשה בלבד. לא ייעוץ פיננסי ולא הבטחה לתוצאה.</p>
+          </div>
+          <aside class="journey" aria-label="שלבי בניית התרחיש">
+            <p class="journey-title">מ״מה אם״ לתמונה קצת יותר ברורה</p>
+            <p class="journey-subtitle">שלושה צעדים. תרחיש אחד בכל פעם.</p>
+            <ol>
+              <li><span class="step-number" aria-hidden="true">1</span><div><strong>מגדירים נקודת פתיחה</strong><p>גיל, חיסכון נזיל, קרן השתלמות וחיסכון פנסיוני.</p></div></li>
+              <li><span class="step-number" aria-hidden="true">2</span><div><strong>בוחנים את תקופת הגישור</strong><p>מתי מתחילים, מה מניחים וכמה הון רוצים לשמר.</p></div></li>
+              <li><span class="step-number" aria-hidden="true">3</span><div><strong>מחשבים ומבינים</strong><p>הכנסה חודשית משוערת, גרף הון והסבר החישוב.</p></div></li>
+            </ol>
+          </aside>
+        </div>
+        <figure id="preview" class="preview">
+          <div class="window">
+            <div class="window-bar"><span>כך נראה תרחיש לדוגמה בסימולטור</span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+            <a class="preview-link" href="assets/simulator-desktop.png" aria-label="פתיחת צילום המסך בגודל מלא">
+              <img src="assets/simulator-desktop.png" width="1344" height="1520" fetchpriority="high" alt="צילום הסימולטור במחשב: שדות התרחיש לצד הכנסה חודשית משוערת, גרף ההון והערכת הפנסיה.">
+            </a>
+          </div>
+          <figcaption>צילום אמיתי של היישום עם נתוני ברירת מחדל להמחשה בלבד. זהו צילום מסך, לא מחשבון פעיל. אפשר לפתוח אותו בגודל מלא.</figcaption>
+        </figure>
+        <div class="facts" aria-label="מאפייני הפרויקט"><span>עברית וכתיבה מימין לשמאל</span><span>חישוב בדפדפן בלבד</span><span>קוד פתוח</span></div>
+      </div>
+    </section>
+    <section id="features" class="wrap section" aria-labelledby="features-title">
+      <p class="eyebrow">להבין, לא לנחש</p>
+      <h2 id="features-title">הנחות שאפשר לשנות.<br>חישוב שאפשר לבדוק.</h2>
+      <p class="section-intro">לא תחזית של העתיד, אלא דרך לחקור איך הנחות שונות משפיעות על אותו תרחיש.</p>
+      <div class="cards">
+        <article class="card"><div class="card-label">תרחיש בשליטה שלך</div><h3>משנים. ואז מחשבים.</h3><p>מעדכנים את השדות ורואים תצוגה מקדימה של ההפרש. התוצאות והגרף מתעדכנים רק בלחיצה על ״חשב סימולציה״, כך שקל להבחין בין טיוטה לתוצאה.</p></article>
+        <article class="card"><div class="card-label">התמונה לאורך הדרך</div><h3>לא רק מספר אחד.</h3><p>רואים את ההון הזמין ואת החיסכון הפנסיוני לאורך התקופה, לצד משיכה חודשית משוערת בגישור והערכת הקצבה לפי הנחות המודל.</p></article>
+        <article class="card"><div class="card-label">ההנחות גלויות</div><h3>גם מאחורי המספרים.</h3><p>פותחים את הסבר הנוסחה ובודקים את הנחות המודל בקוד ובתיעוד. שיעורי ההפחתה ומקדמי ההמרה הם הנחות להמחשה, לא חישוב מס או זכאות אישי.</p></article>
+      </div>
+    </section>
+    <section class="wrap section mobile-section" aria-labelledby="mobile-title">
+      <div class="copy">
+        <p class="eyebrow">גם במסך הקטן</p>
+        <h2 id="mobile-title">אפשר לבחון תרחיש.<br>גם מהספה.</h2>
+        <p>הממשק מותאם לעברית, לטלפון ולמחשב. שדות מספריים, מחוונים וכפתורי שינוי מאפשרים לבחון הנחות בלי גיליון אלקטרוני.</p>
+        <p>אין חשבון ואין שמירה אוטומטית. רענון העמוד מאפס את התרחיש ומחייב אישור מחודש של ההבהרה.</p>
+        <div class="actions"><a class="button" href="assets/simulator-mobile.png">לצילום מהטלפון בגודל מלא <span aria-hidden="true">←</span></a></div>
+      </div>
+      <figure>
+        <div class="phone"><img src="assets/simulator-mobile.png" width="393" height="852" loading="lazy" decoding="async" alt="צילום תוצאות תרחיש לדוגמה בטלפון: הכנסה חודשית משוערת בגישור, הון זמין ויעד הון לשימור."></div>
+        <figcaption>אותו תרחיש לדוגמה, בתצוגת טלפון.</figcaption>
+      </figure>
+    </section>
+    <section id="privacy" class="wrap section privacy" aria-labelledby="privacy-title">
+      <div>
+        <p class="eyebrow">פחות מידע בחוץ</p>
+        <h2 id="privacy-title">התרחיש שלך<br>נשאר בדפדפן שלך.</h2>
+        <p>היישום אינו שולח את הנתונים שהוזנו או את תוצאות החישוב לשרת. אין ניתוח שימוש, עוגיות, אחסון בדפדפן, גופנים חיצוניים או סקריפטים של צד שלישי.</p>
+        <p>גם עמוד ההיכרות הזה סטטי: הצילומים מוגשים מאותו אתר, והתנועה נעשית בעיצוב בלבד — בלי נגן חיצוני ובלי מעקב.</p>
+      </div>
+      <div>
+        <details open><summary>האם זו אנונימיות מוחלטת?</summary><p>לא. טעינת העמוד וקובצי האתר מחייבת בקשות רשת. ספקי האינטרנט, האחסון וההפצה עשויים לתעד מידע כמו כתובות רשת וזמני גישה, בהתאם למדיניותם ולדין. אין התחייבות להיעדר תיעוד בתשתיות.</p></details>
+        <details><summary>עד כמה אפשר להסתמך על התוצאות?</summary><p>זהו מודל לימודי מפושט עם תשואה קבועה והנחות מס ופנסיה להמחשה. הוא אינו משקף במלואם תנודתיות, סיכון רצף תשואות או שינויי דין. התוצאות בפועל עשויות להיות שונות מהותית, לרבות הפסד הון.</p></details>
+        <details><summary>אפשר לבדוק את הקוד או לתרום?</summary><p>כן. הקוד פתוח ברישיון <bdi>MIT</bdi>, עם בדיקות לחישובים ולממשק. אפשר לעיין בקוד ולהציע שיפורים דרך <a href="https://github.com/pretyk/retirator" rel="noopener noreferrer"><bdi>GitHub</bdi></a>. אין לכלול מידע פיננסי אישי בפניות או בצילומי מסך.</p></details>
+      </div>
+    </section>
+    <section class="wrap closing" aria-labelledby="closing-title">
+      <h2 id="closing-title">סקרנות היא נקודת פתיחה טובה.</h2>
+      <p>אפשר להתחיל בנתוני הדוגמה ולבחון מה משתנה. הסימולטור נועד ללמידה ולהמחשה בלבד. המחבר אינו יועץ פיננסי; הכלי אינו תחליף לייעוץ פיננסי, פנסיוני, מיסויי או משפטי אישי מאיש מקצוע מוסמך. כל המספרים הם אומדנים, לא הבטחות. לפני החלטה יש לבדוק את הנתונים והדין ולקבל ייעוץ מתאים.</p>
+      <div class="actions">
+        <a class="button primary" href="https://nice-pebble-0150fe203.2.azurestaticapps.net" rel="noopener noreferrer">לפתיחת הסימולטור <span aria-hidden="true">←</span></a>
+        <a class="button" href="https://nice-pebble-0150fe203.2.azurestaticapps.net/#disclaimer" rel="noopener noreferrer">להבהרה ולתנאי השימוש המלאים</a>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap">
+    <div class="footer-row">
+      <span><bdi>Retirator</bdi> · קוד פתוח, הנחות גלויות.</span>
+      <div class="footer-links">
+        <a href="https://nice-pebble-0150fe203.2.azurestaticapps.net/#privacy" rel="noopener noreferrer">פרטיות</a>
+        <a href="https://github.com/pretyk/retirator" rel="noopener noreferrer">קוד ותרומה</a>
+        <a href="https://github.com/pretyk/retirator/blob/main/LICENSE" rel="noopener noreferrer">רישיון <bdi>MIT</bdi></a>
+      </div>
+    </div>
+    <p>קישורים לסימולטור ול־<bdi>GitHub</bdi> נפתחים רק בלחיצה ומובילים לשירותים חיצוניים בעלי מדיניות משלהם.</p>
+  </footer>
+</body>
+</html>
