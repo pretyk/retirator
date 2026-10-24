@@ -4,6 +4,9 @@ A Hebrew, RTL Israeli early-retirement and bridge-phase planning simulator.
 React, Tailwind CSS, Lucide icons, and Vite. All application components, financial
 functions, and custom styles live in [`src/App.jsx`](src/App.jsx).
 
+[Project introduction](https://pretyk.github.io/retirator/) ·
+[Open the simulator](https://nice-pebble-0150fe203.2.azurestaticapps.net)
+
 **100% client-side. No backend, analytics, accounts, cookies, storage, external
 fonts, or financial-data transmission.** Reloading resets the scenario.
 The entire site is served as static files. Loading the page and its assets
@@ -282,6 +285,41 @@ The production app makes no third-party requests. npm and browser installation
 do require network access during development.
 
 ## Deployment
+
+### Project introduction on GitHub Pages
+
+`docs/index.html` is a separate Hebrew, RTL project introduction, not a second
+deployment of the simulator. It uses real desktop and mobile screenshots of
+illustrative defaults, a short CSS entrance animation, and a step-line animation.
+Both animations stop within 1.2 seconds and are disabled for reduced motion.
+There is no JavaScript, autoplay video, embedded player, tracking, external font,
+or third-party runtime asset. Images are local and can be opened at full size;
+the mobile screenshot is lazy-loaded.
+
+After merging the documentation, configure **Settings → Pages → Deploy from a
+branch → main → /docs**. The expected URL is
+https://pretyk.github.io/retirator/ (unless a custom Pages domain is configured).
+`docs/.nojekyll` keeps publishing static; no new workflow, dependency, Azure
+permission, or simulator build change is needed.
+
+The page has its own restrictive HTML content policy, including
+`script-src 'none'` and `connect-src 'none'`, and a no-referrer policy.
+GitHub Pages does not provide the app's configurable Azure response headers:
+in particular, a meta CSP cannot enforce `frame-ancestors`. Keep the simulator
+on Azure with its existing response headers. Like other static hosting, Pages
+may log page and asset requests; no network-anonymity guarantee is made.
+
+To refresh the committed PNGs after an intentional UI change, run
+`npm run build` and then `npm run preview -- --port 4173 --strictPort`.
+In a second terminal, run `node scripts/capture-project-page.mjs`.
+The script opens fresh browser contexts, uses only illustrative defaults,
+accepts the entry disclaimer, and captures desktop and mobile views.
+Review both images before committing; never use personal financial information.
+The Playwright project-page tests serve `docs` under `/retirator/` and cover
+image loading, local-only requests, keyboard navigation, responsive layout,
+reduced motion, and axe accessibility. They run as part of `npm run check`.
+
+### Simulator hosting
 
 Production: https://nice-pebble-0150fe203.2.azurestaticapps.net
 
