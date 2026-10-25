@@ -33,6 +33,7 @@ const money = (value) => value === null ? '—' : `₪${integer.format(value)}`;
 const compact = (value) => Math.abs(value) >= 1000000 ? `${number.format(value / 1000000)} מ׳` : `${integer.format(value / 1000)} א׳`;
 const CAPITAL_MAX = 100000000;
 const LIQUID_ASSET_MAX = 10000000;
+const totalLiquidCapital = (s) => (Math.round(s.liquidSavings * 100) + Math.round(s.hishtalmut * 100)) / 100;
 
 export function taxStatus(gender, age) {
   const officialAge = gender === 'female' ? 65 : 67;
@@ -49,6 +50,7 @@ export function validateState(s) {
     else if (key.endsWith('Age') && !Number.isInteger(s[key])) issues.push('יש להזין גיל בשנים שלמות.');
   }
   if (!['male', 'female'].includes(s.gender)) issues.push('יש לבחור מין לחישוב גיל הפרישה.');
+  if (s.targetCapital > totalLiquidCapital(s)) issues.push('יעד ההון בגיל משיכת הפנסיה לא יכול להיות גבוה מסך החיסכון הנזיל וקרן ההשתלמות כיום.');
   if (s.bridgeStartAge < s.currentAge) issues.push('גיל הפסקת העבודה לא יכול להיות לפני הגיל הנוכחי.');
   if (s.pensionAge < s.bridgeStartAge) issues.push('גיל משיכת הפנסיה חייב להיות שווה לגיל הפסקת העבודה או מאוחר ממנו.');
   return [...new Set(issues)];
@@ -67,7 +69,7 @@ export function calculate(s) {
   const yearsWaiting = s.bridgeStartAge - s.currentAge;
   const rate = s.annualReturn / 100 / 12;
   const months = (s.pensionAge - s.bridgeStartAge) * 12;
-  const startingCapital = s.liquidSavings + s.hishtalmut;
+  const startingCapital = totalLiquidCapital(s);
   const pv = startingCapital * (1 + s.annualReturn / 100) ** yearsWaiting;
   const gross = months === 0 ? null : pmt(pv, s.targetCapital, rate, months);
   const taxableRatio = startingCapital === 0 ? 0 : s.liquidSavings / startingCapital;
@@ -140,33 +142,43 @@ function Tooltip({ text }) {
 function NumericField({ name, label, value, min = 0, max = CAPITAL_MAX, step = 10000, unit = '₪', info, onChange, onValidity, children }) {
   const id = useId();
   const [text, setText] = useState(null);
-  const [error, setError] = useState('');
+  const raw = text ?? String(value);
+  const validFormat = /^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(raw.trim());
+  const next = Number(raw.replaceAll(',', '').trim());
+  const valid = validFormat && Number.isFinite(next) && next >= min && next <= max && (unit !== 'שנים' || Number.isInteger(next));
+  const error = valid ? '' : `יש להזין ${unit === 'שנים' ? 'מספר שלם' : 'מספר'} בין ${number.format(min)} ל־${number.format(max)}`;
+  useEffect(() => {
+    onValidity(name, !valid);
+    if (text !== null && valid && next !== value) onChange(name, next);
+  }, [name, next, onChange, onValidity, text, valid, value]);
   const change = (next) => {
     setText(null);
-    setError('');
     onValidity(name, false);
     onChange(name, Math.min(max, Math.max(min, Number(next.toFixed(2)))));
   };
-  const edit = (raw) => {
-    setText(raw);
-    const validFormat = /^(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d{1,2})?$/.test(raw.trim());
-    const next = Number(raw.replaceAll(',', '').trim());
-    const valid = validFormat && Number.isFinite(next) && next >= min && next <= max && (unit !== 'שנים' || Number.isInteger(next));
-    const message = valid ? '' : `יש להזין ${unit === 'שנים' ? 'מספר שלם' : 'מספר'} בין ${number.format(min)} ל־${number.format(max)}`;
-    setError(message);
-    onValidity(name, !valid);
-    if (valid) onChange(name, next);
-  };
   const fill = max === min ? 100 : Math.min(100, Math.max(0, (value - min) / (max - min) * 100));
+  const partialStep = (max - min) % step !== 0;
+  const slide = (next) => {
+    const regular = Math.min(max, min + Math.round((next - min) / step) * step);
+    change(partialStep && Math.abs(max - next) < Math.abs(regular - next) ? max : regular);
+  };
+  const rangeKeyDown = (event) => {
+    if (!partialStep) return;
+    const values = { Home: min, End: max, ArrowLeft: value + step, ArrowUp: value + step, ArrowRight: value - step, ArrowDown: value - step, PageUp: value + step * 10, PageDown: value - step * 10 };
+    if (Object.hasOwn(values, event.key)) {
+      event.preventDefault();
+      change(values[event.key]);
+    }
+  };
   return <div className="numeric-field">
     <div className="field-heading"><label htmlFor={id}>{label}</label><Tooltip text={info} /></div>
     <div className={`number-control ${error ? 'invalid' : ''}`}>
       <span className="unit">{unit}</span>
-      <input id={id} name={name} type="text" inputMode={unit === '%' ? 'decimal' : 'numeric'} dir="ltr" value={text ?? number.format(value)} onChange={(event) => edit(event.target.value)} onBlur={() => { if (!error) setText(null); }} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} />
+      <input id={id} name={name} type="text" inputMode={unit === '%' ? 'decimal' : 'numeric'} dir="ltr" value={text ?? number.format(value)} onChange={(event) => setText(event.target.value)} onBlur={() => { if (!error) setText(null); }} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} />
       <button type="button" aria-label={`הגדל ${label}`} disabled={value >= max} onClick={() => change(value + step)}><Plus size={14} /></button>
       <button type="button" aria-label={`הקטן ${label}`} disabled={value <= min} onClick={() => change(value - step)}><Minus size={14} /></button>
     </div>
-    <input className="range" type="range" aria-label={`${label} - מחוון`} min={min} max={max} step={step} value={value} onChange={(event) => change(Number(event.target.value))} style={{ background: `linear-gradient(to left, #818cf8 0%, #6366f1 ${fill}%, #2b3449 ${fill}%, #2b3449 100%)` }} />
+    <input className="range" type="range" aria-label={`${label} - מחוון`} min={min} max={max} step={partialStep ? 'any' : step} value={value} onChange={(event) => slide(Number(event.target.value))} onKeyDown={rangeKeyDown} style={{ background: `linear-gradient(to left, #818cf8 0%, #6366f1 ${fill}%, #2b3449 ${fill}%, #2b3449 100%)` }} />
     <div className="range-labels" aria-hidden="true"><span>{number.format(min)}</span><span>{number.format(max)}</span></div>
     {error && <p className="field-error" id={`${id}-error`} role="alert">{error}</p>}
     {children}
@@ -392,12 +404,12 @@ export default function App() {
     const timeout = window.setTimeout(() => setFeedback((value) => ({ ...value, type: '' })), 2400);
     return () => window.clearTimeout(timeout);
   }, [feedback.id, feedback.type]);
-  const change = (key, value) => setDraftState((previous) => {
+  const change = useCallback((key, value) => setDraftState((previous) => {
     const next = { ...previous, [key]: value };
     if (key === 'currentAge') next.bridgeStartAge = Math.max(next.bridgeStartAge, value);
     return next;
-  });
-  const validity = (name, value) => setFieldErrors((previous) => previous[name] === value ? previous : { ...previous, [name]: value });
+  }), []);
+  const validity = useCallback((name, value) => setFieldErrors((previous) => previous[name] === value ? previous : { ...previous, [name]: value }), []);
   const field = (name, label, info, extra = {}) => <NumericField key={name} name={name} label={label} info={info} value={draftState[name]} onChange={change} onValidity={validity} {...extra} />;
   const commit = () => {
     if (invalid || !accepted) return;
@@ -427,7 +439,7 @@ export default function App() {
             <Section icon={Wallet} title="הון ונכסים לגישור" index="02">
               {field('liquidSavings', 'חיסכון נזיל / תיק השקעות', 'תיק השקעות או חיסכון נזיל. במודל מנוכה מס אפקטיבי של 15% מהמשיכה היחסית מהתיק, כהנחה ל־25% מס על רכיב רווח של 60%.', { max: LIQUID_ASSET_MAX })}
               {field('hishtalmut', 'קרן השתלמות', 'המודל מניח קרן נזילה ומשיכה פטורה ממס בכפוף לתקרות ולתנאי הדין. הפקדות מעבר לתקרה או קרן שטרם נזילה עשויות להיות חייבות במס.', { max: LIQUID_ASSET_MAX })}
-              {field('targetCapital', 'יעד הון להשאיר בגיל פנסיה', 'כרית ביטחון או ירושה שנותרת מההון הזמין בסוף הגישור, בערכי היום. היעד אינו כולל את החיסכון הפנסיוני.')}
+              {field('targetCapital', 'יעד הון להשאיר בגיל פנסיה', 'יעד לשימור בסוף הגישור, בערכי היום. היעד מוגבל לסך החיסכון הנזיל וקרן ההשתלמות כיום, ללא החיסכון הפנסיוני או תשואה עתידית.', { max: totalLiquidCapital(draftState) })}
               {field('annualReturn', 'תשואה שנתית ריאלית צפויה', 'תשואה משוערת לאחר אינפלציה ודמי ניהול, לפני מס משיכה. התשואה קבועה במודל; הפסדים וסיכון רצף תשואות אינם נכללים.', { min: 0, max: 10, step: 0.5, unit: '%' })}
             </Section>
             <Section icon={Landmark} title="חיסכון פנסיוני" index="03">{field('pensionBalance', 'צבירה נוכחית בקרן הפנסיה', 'היתרה הקיימת בקרן, ללא הפקדות עתידיות. מקדם ההמרה והמס הם אומדנים בלבד; אינם הצעה או התחייבות של קרן פנסיה.')}</Section>

@@ -211,12 +211,14 @@ inflation and fees, but before withdrawal taxes.
 
 **Boundary behavior:** pension age may equal bridge start (no bridge income).
 It cannot precede bridge start. Increasing current age moves bridge start
-forward if needed, without silently changing pension age. An unreachable capital
-target produces a signed monthly funding shortfall, not spendable income or a
-negative tax credit. Its chart shows actual zero-withdrawal capital growth,
-not fictitious deposits. Zero balances and zero returns are supported.
+forward if needed, without silently changing pension age. The pension-age reserve
+target cannot exceed current liquid savings plus Keren Hishtalmut, excluding
+pension assets and projected returns. Its slider and steppers use this combined
+limit. An excessive target, including after reducing either asset balance, shows
+an error and blocks calculation without silently changing the target or committed
+results. Zero balances and zero returns are supported.
 Liquid savings and Keren Hishtalmut inputs each permit amounts up to ₪10 million.
-The target capital and pension balance inputs retain their ₪100 million maximum.
+The pension balance input retains its ₪100 million maximum.
 
 ### PRD corrections
 

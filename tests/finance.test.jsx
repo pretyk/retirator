@@ -23,12 +23,9 @@ describe('monthly end-of-period drawdown', () => {
   it('compounds pre-bridge assets annually without new contributions', () => {
     expect(calculate(DEFAULT_STATE).pv).toBeCloseTo(3000000 * 1.04 ** 2, 6);
   });
-  it('taxes only the liquid proportion and never creates tax credits for negative withdrawals', () => {
+  it('taxes only the liquid proportion', () => {
     const state = { ...DEFAULT_STATE, liquidSavings: 1000000, hishtalmut: 3000000 };
     expect(calculate(state).bridgeTax).toBe(0.0375);
-    const impossible = calculate({ ...state, targetCapital: 100000000 });
-    expect(impossible.gross).toBeLessThan(0);
-    expect(impossible.net).toBe(impossible.gross);
   });
   it('keeps exempt-only draws untaxed', () => {
     const result = calculate({ ...DEFAULT_STATE, liquidSavings: 0 });
@@ -39,12 +36,12 @@ describe('monthly end-of-period drawdown', () => {
     expect(result.net).toBe(0);
     expect(result.bridgeTax).toBe(0);
   });
-  it('preserves signed deficits and charts actual capital without invented deposits', () => {
+  it('rejects an excessive target instead of calculating or charting it', () => {
     const state = { ...DEFAULT_STATE, annualReturn: 0, targetCapital: 5000000 };
     const result = calculate(state);
-    expect(result.reachable).toBe(false);
-    expect(result.gross).toBeLessThan(0);
-    expect(trajectory(state, result).at(-1).capital).toBe(3000000);
+    expect(result.valid).toBe(false);
+    expect(result.issues).toContain('יעד ההון בגיל משיכת הפנסיה לא יכול להיות גבוה מסך החיסכון הנזיל וקרן ההשתלמות כיום.');
+    expect(trajectory(state, result)).toEqual([]);
   });
   it('allows same-day bridge and pension start without inventing a monthly payment', () => {
     const result = calculate({ ...DEFAULT_STATE, bridgeStartAge: 67 });
@@ -53,8 +50,8 @@ describe('monthly end-of-period drawdown', () => {
     expect(result.net).toBeNull();
     expect(result.reachable).toBe(true);
   });
-  it('flags a zero-duration capital deficit', () => {
-    expect(calculate({ ...DEFAULT_STATE, bridgeStartAge: 67, targetCapital: 100000000 }).reachable).toBe(false);
+  it('rejects an excessive target even without a bridge period', () => {
+    expect(calculate({ ...DEFAULT_STATE, bridgeStartAge: 67, targetCapital: 3000000.01 }).valid).toBe(false);
   });
 });
 
@@ -112,10 +109,26 @@ describe('validation and trajectories', () => {
     expect(calculate({ ...DEFAULT_STATE, liquidSavings: 10000000, hishtalmut: 10000000 }))
       .toMatchObject({ valid: true, startingCapital: 20000000 });
   });
-  it.each(['targetCapital', 'pensionBalance'])('retains the 100 million maximum for %s', (key) => {
+  it.each(['pensionBalance'])('retains the 100 million maximum for %s', (key) => {
     expect(validateState({ ...DEFAULT_STATE, [key]: 100000000 })).toEqual([]);
     expect(calculate({ ...DEFAULT_STATE, [key]: 100000000 }).valid).toBe(true);
     expect(validateState({ ...DEFAULT_STATE, [key]: 100000000.01 }).length).toBeGreaterThan(0);
+  });
+  it.each([
+    [0, 0, 0], [1000000, 0, 1000000], [0, 1200000, 1200000], [1800000, 1200000, 3000000],
+    [10000000, 10000000, 20000000], [123456.78, 234567.89, 358024.67],
+  ])('caps the reserve at liquid assets %s + %s, inclusive', (liquidSavings, hishtalmut, total) => {
+    const state = { ...DEFAULT_STATE, liquidSavings, hishtalmut, targetCapital: total };
+    expect(validateState(state)).toEqual([]);
+    expect(calculate(state)).toMatchObject({ valid: true, reachable: true });
+    expect(calculate({ ...state, targetCapital: total + 0.01 }).valid).toBe(false);
+    expect(calculate({ ...state, targetCapital: 0 }).valid).toBe(true);
+  });
+  it('accepts an exact agorot limit despite binary floating-point addition', () => {
+    const state = { ...DEFAULT_STATE, liquidSavings: 1800000.01, hishtalmut: 1200000.13, targetCapital: 3000000.14, annualReturn: 0 };
+    expect(validateState(state)).toEqual([]);
+    expect(calculate(state)).toMatchObject({ valid: true, startingCapital: 3000000.14, gross: 0 });
+    expect(calculate({ ...state, targetCapital: 3000000.15 }).valid).toBe(false);
   });
   it.each([
     { pensionAge: 50 }, { bridgeStartAge: 49 }, { currentAge: NaN }, { liquidSavings: -1 },
@@ -139,10 +152,17 @@ describe('validation and trajectories', () => {
     const state = { ...DEFAULT_STATE, currentAge: 67, bridgeStartAge: 67, pensionAge: 67 };
     expect(trajectory(state, calculate(state))).toEqual([{ age: 67, capital: 3000000, pension: 2500000 }]);
   });
-  it('supports portfolios that grow during a feasible low-withdrawal bridge', () => {
+  it('does not use projected returns or pension savings to raise the reserve limit', () => {
     const state = { ...DEFAULT_STATE, targetCapital: 4000000 };
     const result = calculate(state);
-    expect(result.reachable).toBe(true);
-    expect(trajectory(state, result).at(-1).capital).toBeCloseTo(4000000, 5);
+    expect(result.valid).toBe(false);
+    expect(calculate({ ...state, pensionBalance: 100000000, annualReturn: 10 }).valid).toBe(false);
+  });
+  it.each([0, 4, 10])('preserves the full liquid total as the target at %s percent return', (annualReturn) => {
+    const state = { ...DEFAULT_STATE, targetCapital: 3000000, annualReturn };
+    const result = calculate(state);
+    expect(result.valid).toBe(true);
+    expect(result.gross).toBeGreaterThanOrEqual(0);
+    expect(trajectory(state, result).at(-1).capital).toBeCloseTo(state.targetCapital, 5);
   });
 });

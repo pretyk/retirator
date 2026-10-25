@@ -18,6 +18,7 @@ These are **simplified model assumptions**, not a statement of current law. Ever
 | Annuity factor | 200 at 67, +4 per year earlier, −3 per year later | `calculate` |
 | Bridge drawdown | Excel PMT, end-of-month, `r = annualReturn / 100 / 12` (`annualReturn` is a percent, e.g. 4) | `pmt` |
 | Pre-bridge growth | Annual compounding at the real return | `calculate` |
+| Pension-age reserve target | At most current liquid savings + Keren Hishtalmut; excludes pension assets and projected returns (input constraint, not a legal rule) | `validateState` |
 
 ## Known simplifications
 
