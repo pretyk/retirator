@@ -175,8 +175,8 @@ function NumericField({ name, label, value, min = 0, max = CAPITAL_MAX, step = 1
     <div className={`number-control ${error ? 'invalid' : ''}`}>
       <span className="unit">{unit}</span>
       <input id={id} name={name} type="text" inputMode={unit === '%' ? 'decimal' : 'numeric'} dir="ltr" value={text ?? number.format(value)} onChange={(event) => setText(event.target.value)} onBlur={() => { if (!error) setText(null); }} aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} />
-      <button type="button" aria-label={`הגדל ${label}`} disabled={value >= max} onClick={() => change(value + step)}><Plus size={14} /></button>
-      <button type="button" aria-label={`הקטן ${label}`} disabled={value <= min} onClick={() => change(value - step)}><Minus size={14} /></button>
+      <span className="number-steppers"><button type="button" aria-label={`הגדל ${label}`} disabled={value >= max} onClick={() => change(value + step)}><Plus size={14} /></button>
+      <button type="button" aria-label={`הקטן ${label}`} disabled={value <= min} onClick={() => change(value - step)}><Minus size={14} /></button></span>
     </div>
     <input className="range" type="range" aria-label={`${label} - מחוון`} min={min} max={max} step={partialStep ? 'any' : step} value={value} onChange={(event) => slide(Number(event.target.value))} onKeyDown={rangeKeyDown} style={{ background: `linear-gradient(to left, #818cf8 0%, #6366f1 ${fill}%, #2b3449 ${fill}%, #2b3449 100%)` }} />
     <div className="range-labels" aria-hidden="true"><span>{number.format(min)}</span><span>{number.format(max)}</span></div>
@@ -207,8 +207,8 @@ function CapitalChart({ state, result }) {
   const points = useMemo(() => trajectory(state, result), [state, result]);
   const [selected, setSelected] = useState(null);
   const uid = useId().replaceAll(':', '');
-  const narrow = useMediaQuery(MOBILE_QUERY);
-  const width = narrow ? 380 : 760, height = 265, left = narrow ? 60 : 65, right = width - (narrow ? 14 : 30), top = 25, bottom = 215;
+  const narrow = useMediaQuery('(max-width:1150px)');
+  const width = narrow ? 380 : 760, height = 280, left = 72, right = width - 36, top = 25, bottom = 215;
   const select = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const fraction = ((event.clientX - rect.left) / rect.width * width - left) / (right - left);
@@ -222,7 +222,7 @@ function CapitalChart({ state, result }) {
   const capitalLine = line('capital');
   const ageMarks = [...new Set([state.currentAge, state.bridgeStartAge, state.pensionAge])].reduce((marks, age) => {
     const previous = marks.at(-1);
-    const crowded = previous && x(age) - previous.x < (narrow ? 64 : 58);
+    const crowded = previous && x(age) - previous.x < 76;
     return [...marks, { age, x: x(age), row: crowded ? 1 - previous.row : 0 }];
   }, []);
   const last = points.at(-1);
@@ -237,7 +237,7 @@ function CapitalChart({ state, result }) {
       <path d={`${capitalLine} L${x(last.age)},${bottom} L${left},${bottom} Z`} fill={`url(#${uid})`} />
       <path d={capitalLine} stroke="#818cf8" strokeWidth="3" fill="none" strokeLinejoin="round" />
       <path d={line('pension')} stroke="#34d399" strokeWidth="2.5" strokeDasharray="7 6" fill="none" />
-      {ageMarks.map(({ age, x: position, row }) => <g key={age}><line x1={position} x2={position} y1={top} y2={bottom} stroke="#59627a" strokeDasharray="4 6" /><text x={position} y={bottom + 24 + row * 18} textAnchor="middle" className="svg-label">גיל {age}</text></g>)}
+      {ageMarks.map(({ age, x: position, row }) => <g key={age}><line x1={position} x2={position} y1={top} y2={bottom} stroke="#59627a" strokeDasharray="4 6" /><text x={position} y={bottom + 24 + row * 24} textAnchor="middle" className="svg-label">גיל {age}</text></g>)}
       <circle cx={x(last.age)} cy={y(last.capital)} r="5" fill="#a5b4fc" stroke="#131826" strokeWidth="3" />
       {selected !== null && <><line x1={x(chosen.age)} x2={x(chosen.age)} y1={top} y2={bottom} stroke="#94a3b8" /><circle cx={x(chosen.age)} cy={y(chosen.capital)} r="5" fill="#a5b4fc" /></>}
     </svg>
@@ -493,27 +493,33 @@ const styles = `
 .intro-copy{min-width:0;flex:1}.intro-copy h1{min-height:2.9em;text-wrap:balance}.punchline-button{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:8px;padding:6px 10px;border:1px solid #3b4366;border-radius:8px;background:#171d2c;color:#c7d2fe;font-size:14px}.punchline-button:hover{background:#232342;border-color:#818cf8}
 @media(max-width:720px){.intro-copy{width:100%}.intro-copy h1{min-height:4.35em}}
 .dock-preview{display:none}
-@media(max-width:720px){
-.results{scroll-margin-top:12px}.brand{min-height:44px}.header-tag{font-size:14px}.intro p{font-size:16px;line-height:1.8}.privacy-badge{font-size:14px}.privacy-more{min-height:32px}.text-link{display:inline-flex;align-items:center;min-height:32px;font-size:14px}
-.field-heading,.two-fields .field-heading{font-size:16px;line-height:1.6;min-height:26px;margin-bottom:10px}.two-fields{grid-template-columns:1fr;gap:0}
-.info-button{width:44px;height:44px;margin:-12px -10px;padding:0}
-.tooltip-wrap{position:static}.numeric-field,.gender-row{position:relative}.tooltip{top:36px;bottom:auto;inset-inline:0;width:auto;max-width:none;font-size:14px;pointer-events:none}.tooltip.tooltip-above{top:auto;bottom:calc(100% + 6px)}
-.gender-toggle button{min-height:44px;min-width:64px;font-size:16px;padding:0 18px}
-.range-labels{font-size:14px}
-.tax-alert,.tax-alert strong{font-size:14px}.tax-alert small{font-size:14px}
-.calculate-dock{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}.calculate-button,.entry-disclaimer .calculate-button{min-height:52px;font-size:16px}.calculate-dock>span{font-size:14px;margin-top:8px}
-.dock-preview{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:14px;color:#c3ccdd;margin-bottom:10px}.dock-preview b{margin-inline-start:auto;font-size:18px;color:#eef2fc;font-variant-numeric:tabular-nums}.dock-preview .delta{font-size:14px}
-.results-status{font-size:14px;flex-wrap:wrap}.fx-button{width:44px;height:44px}.icon-button{min-width:44px;min-height:44px}.delta{font-size:14px}
-.hero-subtitle{font-size:16px}.hero-amount>small,.hero-warning{font-size:14px}
-.hero-bottom{grid-template-columns:1fr 1fr;gap:12px}.hero-bottom span,.hero-bottom em,.hero-bottom small{font-size:14px}.hero-bottom strong{font-size:19px}.hero-bottom>div:last-child{display:flex;grid-column:1/-1;flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:baseline;border-inline-start:0;padding-inline-start:0;border-top:1px solid #40496982;padding-top:12px}
-.metric-top,.metric-card>small{font-size:14px;line-height:1.6}.chart-panel .eyebrow{font-size:14px}.chart-legend,.chart-readout{font-size:14px}.chart-footer{font-size:14px}.capital-chart{touch-action:pan-y}.svg-label{font-size:16px}
-.pension-main{grid-template-columns:1fr}.pension-detail{border:0;padding:0}.pension-detail>span,.pension-detail b,.pension-note,.pension-amount small{font-size:14px}.pension-main>div>.muted{font-size:16px}.pension-card .card-heading{flex-wrap:wrap}
-.eyebrow,.section-index,.phase-badge,.estimate-badge,.pension-title .eyebrow,.controls-header p,.field-error{font-size:14px}.section-heading h3{font-size:16px}.notice,.notice p,.notice strong{font-size:14px}.site-footer{font-size:14px}.site-footer nav a{display:inline-flex;align-items:center;min-height:44px;padding-inline:8px}
-.formula-modal p,.information-lead,.information-card section p{font-size:16px}.formula,.formula-values,.entry-disclaimer .agreement-label,.entry-links,.entry-disclaimer>small,.document-date{font-size:14px}.formula-values>div{flex-wrap:wrap}
+:root{font-size:100%;--text-small:.875rem;--text-body:1rem;--text-label:1.125rem;--text-value:1.25rem;line-height:1.5}
+.brand{min-height:44px}.header-center,.header-tag,.header-tag>span{font-size:var(--text-small)}.intro p{font-size:var(--text-body);line-height:1.8}.privacy-badge{font-size:var(--text-small)}.privacy-more{min-height:32px}.text-link{display:inline-flex;align-items:center;min-height:32px;font-size:var(--text-small)}
+.controls-header{gap:12px}.controls-header h2{font-size:var(--text-value)}.field-heading,.two-fields .field-heading{font-size:var(--text-label);line-height:1.6;min-height:29px;margin-bottom:12px}.two-fields{grid-template-columns:1fr;gap:0}.gender-row{flex-wrap:wrap;row-gap:12px}.gender-row .field-heading{margin-bottom:0}.tooltip-wrap{flex-shrink:0}
+.tooltip{font-size:var(--text-body);width:280px}.gender-toggle button{min-height:44px;min-width:64px;font-size:var(--text-body);padding:0 18px}
+.number-control,.two-fields .number-control{min-height:56px;height:auto;flex-wrap:wrap;gap:6px;padding:4px 8px}.number-control input,.two-fields .number-control input{font-size:var(--text-value);height:2.2em;min-height:44px;flex:1 0 12ch;width:0;max-width:100%}.number-control .unit,.two-fields .number-control .unit{font-size:var(--text-small)}.number-steppers{display:flex;gap:6px;margin-inline-start:auto}.number-control button{min-width:44px;height:44px;border-radius:7px}
+.range-labels{font-size:var(--text-small)}
+.tax-alert,.tax-alert strong,.tax-alert small{font-size:var(--text-small)}
+.calculate-button,.entry-disclaimer .calculate-button{min-height:52px;font-size:var(--text-body)}.calculate-dock>span{font-size:var(--text-small);margin-top:8px}
+.results-status{font-size:var(--text-small);flex-wrap:wrap}.fx-button{width:44px;height:44px}.icon-button{min-width:44px;min-height:44px}.delta{font-size:var(--text-small);flex-wrap:wrap}
+.hero-subtitle{font-size:var(--text-body)}.hero-amount{flex-wrap:wrap}.hero-amount>small,.hero-warning{font-size:var(--text-small)}
+.hero-bottom span,.hero-bottom em,.hero-bottom small{font-size:var(--text-small)}.hero-bottom>div{min-width:0}.hero-bottom strong{font-size:var(--text-value)}
+.metric-top{font-size:var(--text-body);line-height:1.6}.metric-card>small{font-size:var(--text-small);line-height:1.6}.metric-card>strong{max-width:100%;overflow-wrap:anywhere}.chart-panel .eyebrow,.chart-legend,.chart-readout,.chart-footer{font-size:var(--text-small)}.capital-chart{touch-action:pan-y}.svg-label{font-size:20px}
+.pension-detail>span{flex-wrap:wrap}.pension-detail>span,.pension-detail b,.pension-note,.pension-amount small{font-size:var(--text-small)}.pension-main>div>.muted{font-size:var(--text-body)}.pension-card .card-heading{flex-wrap:wrap}.pension-amount{flex-wrap:wrap}.pension-amount strong{overflow-wrap:anywhere;min-width:0}
+.eyebrow,.section-index,.phase-badge,.estimate-badge,.pension-title .eyebrow,.controls-header p,.field-error{font-size:var(--text-small)}.section-heading h3,.card-heading h3{font-size:var(--text-label)}.notice,.notice p,.notice strong{font-size:var(--text-body)}.site-footer{font-size:var(--text-small)}.site-footer nav a{display:inline-flex;align-items:center;min-height:44px;padding-inline:8px}
+.formula-modal p,.information-lead,.information-card section p,.entry-disclaimer .agreement-label{font-size:var(--text-body)}.formula,.formula-values,.entry-links,.entry-disclaimer>small,.document-date,.punchline-button{font-size:var(--text-small)}.formula-values>div{flex-wrap:wrap}
+@media(max-width:1150px){
+.summary-grid,.pension-main{grid-template-columns:1fr}.pension-detail{border:0;padding:0}.hero-bottom{grid-template-columns:1fr 1fr;gap:12px}.hero-bottom>div:last-child{display:flex;grid-column:1/-1;flex-direction:row;flex-wrap:wrap;justify-content:space-between;align-items:baseline;border-inline-start:0;padding-inline-start:0;border-top:1px solid #40496982;padding-top:12px}
 }
+@media(max-width:720px){
+.results{scroll-margin-top:12px}
+.info-button{width:44px;height:44px;margin:-12px -10px;padding:0}
+.tooltip-wrap{position:static}.numeric-field,.gender-row{position:relative}.tooltip{top:36px;bottom:auto;inset-inline:0;width:auto;max-width:none;pointer-events:none}.tooltip.tooltip-above{top:auto;bottom:calc(100% + 6px)}
+.calculate-dock{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.dock-preview{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:var(--text-small);color:#c3ccdd;margin-bottom:10px}.dock-preview b{margin-inline-start:auto;font-size:var(--text-label);color:#eef2fc;font-variant-numeric:tabular-nums}
+}
+@media(max-width:390px){.fields-body{padding-inline:12px}}
 @media(max-width:720px),(any-pointer:coarse){
-.two-fields{grid-template-columns:1fr;gap:0}
-.number-control,.two-fields .number-control{height:54px;gap:6px;padding-inline:12px 4px}.number-control input,.two-fields .number-control input{font-size:18px;height:100%}.number-control .unit,.two-fields .number-control .unit{font-size:14px}.number-control button{min-width:44px;height:44px;border-radius:7px}
 .range{height:44px;margin:16px 0 0;padding:20px 0;background-clip:content-box!important}.range::-webkit-slider-thumb{width:26px;height:26px}.range::-moz-range-thumb{width:18px;height:18px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.confetti{display:none}}
