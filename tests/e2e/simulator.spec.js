@@ -217,8 +217,8 @@ for (const label of ['חיסכון נזיל / תיק השקעות', 'קרן הש
   });
 }
 
-test('retains 100 million limits for target capital and pension balance', async ({ page }) => {
-  for (const label of ['יעד הון להשאיר בגיל פנסיה', 'צבירה נוכחית בקרן הפנסיה']) {
+test('retains the 100 million limit for pension balance', async ({ page }) => {
+  for (const label of ['צבירה נוכחית בקרן הפנסיה']) {
     await expect(page.getByRole('slider', { name: `${label} - מחוון`, exact: true })).toHaveAttribute('max', '100000000');
     await field(page, label).fill('100,000,000');
     await expect(field(page, label)).toHaveAttribute('aria-invalid', 'false');
@@ -236,13 +236,101 @@ test('same-age retirement has no bridge and stays finite', async ({ page }) => {
   expect(await page.getByTestId('capital-chart').innerHTML()).not.toMatch(/NaN|Infinity/);
 });
 
-test('impossible target is flagged, shaking, and never celebrated', async ({ page }) => {
-  await field(page, 'יעד הון להשאיר בגיל פנסיה').fill('100,000,000');
-  await commit(page).click();
-  await expect(page.getByTestId('bridge-card')).toHaveClass(/shake/);
-  await expect(page.getByText(/יעד ההון אינו בר־השגה\. נדרשת הפקדה/)).toBeVisible();
+test('caps the reserve across text, steppers and slider without changing committed results', async ({ page }) => {
+  const label = 'יעד הון להשאיר בגיל פנסיה';
+  const input = field(page, label);
+  const slider = page.getByRole('slider', { name: `${label} - מחוון`, exact: true });
+  const increase = page.getByRole('button', { name: `הגדל ${label}`, exact: true });
+  const before = await page.getByTestId('bridge-net').textContent();
+  await expect(slider).toHaveAttribute('max', '3000000');
+  await input.fill('3,000,000.01');
+  await expect(input).toHaveAttribute('aria-invalid', 'true');
+  await expect(commit(page)).toBeDisabled();
+  await expect(page.getByRole('alert').filter({ hasText: 'יש להזין מספר בין 0 ל־3,000,000' })).toBeVisible();
+  await expect(page.getByTestId('bridge-net')).toHaveText(before);
   await expect(page.getByTestId('confetti')).toHaveCount(0);
+  await input.fill('2,999,999.99');
+  await increase.click();
+  await expect(input).toHaveValue('3,000,000');
+  await expect(increase).toBeDisabled();
+  await expect(commit(page)).toBeEnabled();
+  await slider.focus();
+  await slider.press('Home');
+  await expect(input).toHaveValue('0');
+  await slider.press('End');
+  await expect(input).toHaveValue('3,000,000');
+  await commit(page).click();
+  await expect(page.locator('.metric-card').filter({ hasText: 'כרית הביטחון שלך' })).toContainText('₪3,000,000');
 });
+
+for (const label of ['חיסכון נזיל / תיק השקעות', 'קרן השתלמות']) {
+  test(`revalidates the reserve when ${label} changes`, async ({ page }) => {
+    const target = field(page, 'יעד הון להשאיר בגיל פנסיה');
+    const slider = page.getByRole('slider', { name: 'יעד הון להשאיר בגיל פנסיה - מחוון', exact: true });
+    const before = await page.getByTestId('bridge-net').textContent();
+    await target.fill('3,000,000');
+    const asset = field(page, label);
+    const original = label === 'קרן השתלמות' ? '1,200,000' : '1,800,000';
+    await asset.fill('0');
+    await expect(target).toHaveValue('3,000,000');
+    await expect(target).toHaveAttribute('aria-invalid', 'true');
+    await expect(commit(page)).toBeDisabled();
+    await expect(page.getByTestId('bridge-net')).toHaveText(before);
+    await asset.fill(original);
+    await expect(target).toHaveAttribute('aria-invalid', 'false');
+    await expect(commit(page)).toBeEnabled();
+    await target.fill('3,000,000.01');
+    await asset.fill('2,000,000');
+    await expect(target).toHaveAttribute('aria-invalid', 'false');
+    await expect(commit(page)).toBeEnabled();
+    await target.blur();
+    await expect(target).toHaveValue('3,000,000.01');
+    await target.fill('0');
+    await field(page, 'חיסכון נזיל / תיק השקעות').fill('0');
+    await field(page, 'קרן השתלמות').fill('0');
+    await expect(slider).toHaveAttribute('max', '0');
+    await expect(slider).toHaveValue('0');
+    await expect(commit(page)).toBeEnabled();
+    await target.fill('0.01');
+    await expect(commit(page)).toBeDisabled();
+  });
+}
+
+test('reserve steppers respect a fractional combined asset limit', async ({ page }) => {
+  await field(page, 'חיסכון נזיל / תיק השקעות').fill('1,800,000.01');
+  await field(page, 'קרן השתלמות').fill('1,200,000.13');
+  const input = field(page, 'יעד הון להשאיר בגיל פנסיה');
+  await input.fill('3,000,000');
+  await page.getByRole('button', { name: 'הגדל יעד הון להשאיר בגיל פנסיה', exact: true }).click();
+  await expect(input).toHaveValue('3,000,000.14');
+  await expect(page.getByRole('slider', { name: 'יעד הון להשאיר בגיל פנסיה - מחוון', exact: true })).toHaveAttribute('max', '3000000.14');
+  await expect(commit(page)).toBeEnabled();
+});
+
+for (const [amount, expected] of [['5000', '5,000'], ['3000000.14', '3,000,000.14']]) {
+  test(`reserve slider reaches the exact ${amount} endpoint`, async ({ page }) => {
+    await field(page, 'חיסכון נזיל / תיק השקעות').fill(amount);
+    await field(page, 'קרן השתלמות').fill('0');
+    const input = field(page, 'יעד הון להשאיר בגיל פנסיה');
+    const slider = page.getByRole('slider', { name: 'יעד הון להשאיר בגיל פנסיה - מחוון', exact: true });
+    await slider.focus();
+    await slider.press('End');
+    await expect(input).toHaveValue(expected);
+    await expect(slider).toHaveValue(amount);
+    await expect(commit(page)).toBeEnabled();
+    await slider.press('Home');
+    await expect(input).toHaveValue('0');
+    await slider.press('ArrowLeft');
+    await expect(input).toHaveValue(amount === '5000' ? '5,000' : '10,000');
+    await slider.press('ArrowRight');
+    await expect(input).toHaveValue('0');
+    await slider.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    const box = await slider.boundingBox();
+    await page.mouse.click(box.x + 1, box.y + box.height / 2);
+    await expect(input).toHaveValue(expected);
+    await expect(slider).toHaveValue(amount);
+  });
+}
 
 test('early pension risk overrides celebration even with high bridge income', async ({ page }) => {
   await field(page, 'גיל משיכת פנסיה').fill('59');
