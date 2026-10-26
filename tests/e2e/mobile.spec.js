@@ -81,14 +81,14 @@ for (const [name, device] of [['default phone', {}], ['small 360px phone', SMALL
           .filter((element) => { const box = element.getBoundingClientRect(); return box.width < 44 || box.height < 44; })
           .map((element) => `${label(element)} ${Math.round(element.getBoundingClientRect().width)}x${Math.round(element.getBoundingClientRect().height)}`);
         const smallInputs = [...document.querySelectorAll('main input[type=text]')].filter(visible)
-          .filter((element) => parseFloat(getComputedStyle(element).fontSize) < 18).map(label);
+          .filter((element) => parseFloat(getComputedStyle(element).fontSize) < 20).map(label);
         const smallLabels = [...document.querySelectorAll('.field-heading, .section-heading h3')]
-          .filter((element) => parseFloat(getComputedStyle(element).fontSize) < 16).map(label);
+          .filter((element) => parseFloat(getComputedStyle(element).fontSize) < 18).map(label);
         return { small, smallInputs, smallLabels };
       });
       expect(report.small, 'touch targets smaller than 44x44').toEqual([]);
-      expect(report.smallInputs, 'mobile inputs smaller than 18px').toEqual([]);
-      expect(report.smallLabels, 'field labels smaller than 16px').toEqual([]);
+      expect(report.smallInputs, 'mobile inputs smaller than 20px').toEqual([]);
+      expect(report.smallLabels, 'field labels smaller than 18px').toEqual([]);
       await expectReadableText(page.locator('.app-shell'));
     });
 
@@ -149,7 +149,7 @@ for (const [name, device] of [['default phone', {}], ['small 360px phone', SMALL
         await button.tap();
         const tooltip = page.locator(`#${await button.getAttribute('aria-describedby')}`);
         await expect(tooltip).toBeVisible();
-        await expect(tooltip).toHaveCSS('font-size', '14px');
+        await expect(tooltip).toHaveCSS('font-size', '16px');
         await expectInside(tooltip);
       }
 
