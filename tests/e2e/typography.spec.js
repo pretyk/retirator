@@ -31,6 +31,20 @@ const expectValueFits = async (input) => {
   expect(fits, `${await input.getAttribute('name')} value must fit`).toBe(true);
 };
 
+const expectReadableChart = async (page, expectedSize = 16) => {
+  const chart = page.getByTestId('capital-chart');
+  await expect.poll(() => chart.locator('.svg-label').evaluateAll((elements) => elements.map((element) => {
+    const scale = element.getScreenCTM();
+    return Math.round(parseFloat(getComputedStyle(element).fontSize) * Math.hypot(scale.a, scale.b) * 100) / 100;
+  }))).toEqual(Array(8).fill(expectedSize));
+  const inside = await chart.locator('.svg-label').evaluateAll((elements) => elements.every((element) => {
+    const box = element.getBoundingClientRect();
+    const svgBox = element.ownerSVGElement.getBoundingClientRect();
+    return box.left >= svgBox.left && box.right <= svgBox.right && box.bottom <= svgBox.bottom;
+  }));
+  expect(inside, 'chart labels must not be clipped').toBe(true);
+};
+
 for (const width of [320, 360, 720, 721, 820, 1024, 1150, 1280, 1440]) {
   test(`readable typography and unclipped values at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
@@ -50,19 +64,15 @@ for (const width of [320, 360, 720, 721, 820, 1024, 1150, 1280, 1440]) {
       await input.fill(maximum);
       await input.blur();
       await expectValueFits(input);
+      if (await input.getAttribute('name') === 'pensionBalance') {
+        await input.fill('99999999.99');
+        await input.blur();
+        await expectValueFits(input);
+      }
     }
     await expectReadableLayout(page.locator('.app-shell'));
 
-    const chart = page.getByTestId('capital-chart');
-    const labels = await chart.locator('.svg-label').evaluateAll((elements) => elements.map((element) => {
-      const box = element.getBoundingClientRect();
-      const svgBox = element.ownerSVGElement.getBoundingClientRect();
-      return { height: box.height, inside: box.left >= svgBox.left && box.right <= svgBox.right && box.bottom <= svgBox.bottom };
-    }));
-    for (const label of labels) {
-      expect(label.height, 'rendered chart label height').toBeGreaterThanOrEqual(14);
-      expect(label.inside, 'chart labels must not be clipped').toBe(true);
-    }
+    await expectReadableChart(page);
 
     await page.getByRole('button', { name: 'הצג נוסחת חישוב' }).click();
     await expectReadableLayout(page.getByRole('dialog'));
@@ -74,7 +84,7 @@ for (const width of [320, 360, 720, 721, 820, 1024, 1150, 1280, 1440]) {
   });
 }
 
-for (const width of [320, 721, 1440]) {
+for (const width of [320, 360, 390, 721, 1440]) {
   test(`enlarged browser fonts preserve complete values at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
@@ -83,7 +93,7 @@ for (const width of [320, 721, 1440]) {
     await page.evaluate(() => { document.documentElement.style.fontSize = '125%'; });
     await expect(page.getByRole('textbox', { name: 'גיל נוכחי', exact: true })).toHaveCSS('font-size', '25px');
     await expect(page.locator('.field-heading').first()).toHaveCSS('font-size', '22.5px');
-    for (const [name, value] of [['liquidSavings', '9999999.99'], ['hishtalmut', '10000000'], ['pensionBalance', '100000000']]) {
+    for (const [name, value] of [['liquidSavings', '9999999.99'], ['hishtalmut', '10000000'], ['pensionBalance', '100000000'], ['pensionBalance', '99999999.99']]) {
       const input = page.locator(`input[name="${name}"]`);
       await input.fill(value);
       await input.blur();
@@ -91,5 +101,18 @@ for (const width of [320, 721, 1440]) {
       await expectValueFits(input);
     }
     await expectReadableLayout(page.locator('.app-shell'));
+    await expectReadableChart(page, 20);
   });
 }
+
+test('chart typography follows resizing without changing committed results', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+  await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
+  const result = await page.getByTestId('bridge-net').textContent();
+  for (const width of [1440, 320, 820]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await expectReadableChart(page);
+    await expect(page.getByTestId('bridge-net')).toHaveText(result);
+  }
+});

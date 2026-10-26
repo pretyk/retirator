@@ -108,19 +108,6 @@ export function feedbackFor(result, pensionAge) {
 
 const MOBILE_QUERY = '(max-width: 720px)';
 
-function useMediaQuery(query) {
-  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && Boolean(window.matchMedia?.(query).matches));
-  useEffect(() => {
-    if (!window.matchMedia) return undefined;
-    const list = window.matchMedia(query);
-    const update = () => setMatches(list.matches);
-    update();
-    list.addEventListener('change', update);
-    return () => list.removeEventListener('change', update);
-  }, [query]);
-  return matches;
-}
-
 function Tooltip({ text }) {
   const id = useId();
   const tipRef = useRef(null);
@@ -207,8 +194,18 @@ function CapitalChart({ state, result }) {
   const points = useMemo(() => trajectory(state, result), [state, result]);
   const [selected, setSelected] = useState(null);
   const uid = useId().replaceAll(':', '');
-  const narrow = useMediaQuery('(max-width:1150px)');
-  const width = narrow ? 380 : 760, height = 280, left = 72, right = width - 36, top = 25, bottom = 215;
+  const chartRef = useRef(null);
+  const [{ width, height, fontSize }, setChartSize] = useState({ width: 760, height: 280, fontSize: 16 });
+  useEffect(() => {
+    const chart = chartRef.current;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) setChartSize({ width, height, fontSize: parseFloat(getComputedStyle(chart).fontSize) });
+    });
+    observer.observe(chart);
+    return () => observer.disconnect();
+  }, []);
+  const left = fontSize * 4.5, right = width - fontSize * 2.25, top = fontSize * 1.5, bottom = height - fontSize * 4;
   const select = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const fraction = ((event.clientX - rect.left) / rect.width * width - left) / (right - left);
@@ -222,7 +219,7 @@ function CapitalChart({ state, result }) {
   const capitalLine = line('capital');
   const ageMarks = [...new Set([state.currentAge, state.bridgeStartAge, state.pensionAge])].reduce((marks, age) => {
     const previous = marks.at(-1);
-    const crowded = previous && x(age) - previous.x < 76;
+    const crowded = previous && x(age) - previous.x < fontSize * 4.75;
     return [...marks, { age, x: x(age), row: crowded ? 1 - previous.row : 0 }];
   }, []);
   const last = points.at(-1);
@@ -230,14 +227,14 @@ function CapitalChart({ state, result }) {
   return <section className="panel chart-panel" aria-labelledby="chart-heading">
     <div className="card-heading"><div><span className="eyebrow">התמונה הגדולה</span><h3 id="chart-heading">הכסף שלך, לאורך הדרך</h3></div><ChartNoAxesCombined size={20} className="muted" /></div>
     <div className="chart-legend"><span><i className="dot indigo" />הון זמין לגישור</span><span><i className="dot emerald" />חיסכון פנסיוני</span><span className="muted">ערכים ריאליים · ₪</span></div>
-    <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="תחזית הון זמין וחיסכון פנסיוני מהגיל הנוכחי עד משיכת הפנסיה"     className="capital-chart" data-testid="capital-chart" onPointerDown={select} onPointerMove={select} onPointerLeave={(event) => { if (event.pointerType === 'mouse') setSelected(null); }}>
+    <svg ref={chartRef} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="תחזית הון זמין וחיסכון פנסיוני מהגיל הנוכחי עד משיכת הפנסיה"     className="capital-chart" data-testid="capital-chart" onPointerDown={select} onPointerMove={select} onPointerLeave={(event) => { if (event.pointerType === 'mouse') setSelected(null); }}>
       <defs><linearGradient id={uid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity=".42" /><stop offset="100%" stopColor="#6366f1" stopOpacity=".015" /></linearGradient></defs>
       {[0, 1, 2, 3, 4].map((tick) => <g key={tick}><line x1={left} x2={right} y1={y(max * tick / 4)} y2={y(max * tick / 4)} stroke="#262f45" strokeDasharray="3 6" /><text x={left - 12} y={y(max * tick / 4) + 4} textAnchor="end" className="svg-label">{compact(max * tick / 4)}</text></g>)}
       <rect x={x(state.bridgeStartAge)} y={top} width={Math.max(0, x(state.pensionAge) - x(state.bridgeStartAge))} height={bottom - top} fill="#6366f1" opacity=".035" />
       <path d={`${capitalLine} L${x(last.age)},${bottom} L${left},${bottom} Z`} fill={`url(#${uid})`} />
       <path d={capitalLine} stroke="#818cf8" strokeWidth="3" fill="none" strokeLinejoin="round" />
       <path d={line('pension')} stroke="#34d399" strokeWidth="2.5" strokeDasharray="7 6" fill="none" />
-      {ageMarks.map(({ age, x: position, row }) => <g key={age}><line x1={position} x2={position} y1={top} y2={bottom} stroke="#59627a" strokeDasharray="4 6" /><text x={position} y={bottom + 24 + row * 24} textAnchor="middle" className="svg-label">גיל {age}</text></g>)}
+      {ageMarks.map(({ age, x: position, row }) => <g key={age}><line x1={position} x2={position} y1={top} y2={bottom} stroke="#59627a" strokeDasharray="4 6" /><text x={position} y={bottom + fontSize * 1.5 * (row + 1)} textAnchor="middle" className="svg-label">גיל {age}</text></g>)}
       <circle cx={x(last.age)} cy={y(last.capital)} r="5" fill="#a5b4fc" stroke="#131826" strokeWidth="3" />
       {selected !== null && <><line x1={x(chosen.age)} x2={x(chosen.age)} y1={top} y2={bottom} stroke="#94a3b8" /><circle cx={x(chosen.age)} cy={y(chosen.capital)} r="5" fill="#a5b4fc" /></>}
     </svg>
@@ -497,14 +494,14 @@ const styles = `
 .brand{min-height:44px}.header-center,.header-tag,.header-tag>span{font-size:var(--text-small)}.intro p{font-size:var(--text-body);line-height:1.8}.privacy-badge{font-size:var(--text-small)}.privacy-more{min-height:32px}.text-link{display:inline-flex;align-items:center;min-height:32px;font-size:var(--text-small)}
 .controls-header{gap:12px}.controls-header h2{font-size:var(--text-value)}.field-heading,.two-fields .field-heading{font-size:var(--text-label);line-height:1.6;min-height:29px;margin-bottom:12px}.two-fields{grid-template-columns:1fr;gap:0}.gender-row{flex-wrap:wrap;row-gap:12px}.gender-row .field-heading{margin-bottom:0}.tooltip-wrap{flex-shrink:0}
 .tooltip{font-size:var(--text-body);width:280px}.gender-toggle button{min-height:44px;min-width:64px;font-size:var(--text-body);padding:0 18px}
-.number-control,.two-fields .number-control{min-height:56px;height:auto;flex-wrap:wrap;gap:6px;padding:4px 8px}.number-control input,.two-fields .number-control input{font-size:var(--text-value);height:2.2em;min-height:44px;flex:1 0 12ch;width:0;max-width:100%}.number-control .unit,.two-fields .number-control .unit{font-size:var(--text-small)}.number-steppers{display:flex;gap:6px;margin-inline-start:auto}.number-control button{min-width:44px;height:44px;border-radius:7px}
+.number-control,.two-fields .number-control{min-height:56px;height:auto;flex-wrap:wrap;gap:6px;padding:4px 8px}.number-control input,.two-fields .number-control input{font-size:var(--text-value);height:2.2em;min-height:44px;flex:1 0 calc(12ch + 10px);width:0;max-width:100%}.number-control .unit,.two-fields .number-control .unit{font-size:var(--text-small)}.number-steppers{display:flex;gap:6px;margin-inline-start:auto}.number-control button{min-width:44px;height:44px;border-radius:7px}
 .range-labels{font-size:var(--text-small)}
 .tax-alert,.tax-alert strong,.tax-alert small{font-size:var(--text-small)}
 .calculate-button,.entry-disclaimer .calculate-button{min-height:52px;font-size:var(--text-body)}.calculate-dock>span{font-size:var(--text-small);margin-top:8px}
 .results-status{font-size:var(--text-small);flex-wrap:wrap}.fx-button{width:44px;height:44px}.icon-button{min-width:44px;min-height:44px}.delta{font-size:var(--text-small);flex-wrap:wrap}
 .hero-subtitle{font-size:var(--text-body)}.hero-amount{flex-wrap:wrap}.hero-amount>small,.hero-warning{font-size:var(--text-small)}
 .hero-bottom span,.hero-bottom em,.hero-bottom small{font-size:var(--text-small)}.hero-bottom>div{min-width:0}.hero-bottom strong{font-size:var(--text-value)}
-.metric-top{font-size:var(--text-body);line-height:1.6}.metric-card>small{font-size:var(--text-small);line-height:1.6}.metric-card>strong{max-width:100%;overflow-wrap:anywhere}.chart-panel .eyebrow,.chart-legend,.chart-readout,.chart-footer{font-size:var(--text-small)}.capital-chart{touch-action:pan-y}.svg-label{font-size:20px}
+.metric-top{font-size:var(--text-body);line-height:1.6}.metric-card>small{font-size:var(--text-small);line-height:1.6}.metric-card>strong{max-width:100%;overflow-wrap:anywhere}.chart-panel .eyebrow,.chart-legend,.chart-readout,.chart-footer{font-size:var(--text-small)}.capital-chart{touch-action:pan-y;height:17.5rem;font-size:var(--text-body)}.svg-label{font-size:var(--text-body)}
 .pension-detail>span{flex-wrap:wrap}.pension-detail>span,.pension-detail b,.pension-note,.pension-amount small{font-size:var(--text-small)}.pension-main>div>.muted{font-size:var(--text-body)}.pension-card .card-heading{flex-wrap:wrap}.pension-amount{flex-wrap:wrap}.pension-amount strong{overflow-wrap:anywhere;min-width:0}
 .eyebrow,.section-index,.phase-badge,.estimate-badge,.pension-title .eyebrow,.controls-header p,.field-error{font-size:var(--text-small)}.section-heading h3,.card-heading h3{font-size:var(--text-label)}.notice,.notice p,.notice strong{font-size:var(--text-body)}.site-footer{font-size:var(--text-small)}.site-footer nav a{display:inline-flex;align-items:center;min-height:44px;padding-inline:8px}
 .formula-modal p,.information-lead,.information-card section p,.entry-disclaimer .agreement-label{font-size:var(--text-body)}.formula,.formula-values,.entry-links,.entry-disclaimer>small,.document-date,.punchline-button{font-size:var(--text-small)}.formula-values>div{flex-wrap:wrap}

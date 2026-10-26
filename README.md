@@ -168,6 +168,8 @@ Inline styles are required by the single-file design. Do not add analytics.
   respect browser font preferences; age fields and narrow result cards stack
   instead of reducing the type size. Steppers wrap below the input when needed
   so large amounts stay readable with enlarged browser fonts.
+  The chart matches its SVG coordinates to its rendered size so its 16px,
+  root-relative labels do not shrink on narrow screens.
 - Changes update **draft** values, tax alerts, and monthly delta previews.
   Results, chart, and formula-modal variables stay **committed** until clicking
   **חשב סימולציה**. Invalid inputs and timelines explicitly block that action.
