@@ -34,6 +34,27 @@ warranty. Third-party dependencies remain under their respective licenses.
 The financial disclaimer below explains the simulator's limitations; it does
 not impose additional restrictions on the rights granted by the MIT License.
 
+Every production build ships `/LICENSE.txt` (the project's unchanged MIT license)
+and `/THIRD_PARTY_NOTICES.txt`, linked from the Hebrew app footer. The notices
+include the complete LICENSE files from the exact installed, locked React,
+React DOM, Scheduler (transitive), Lucide React, Tailwind CSS, and Vite packages.
+Tailwind is a development dependency but contributes distributed CSS. Lucide's
+packaged ISC text includes its Feather-origin attribution; the upstream Feather
+v4.29.2 MIT notice is also included verbatim as a supplementary notice, not as
+a separately installed dependency. Its source is recorded in the notice file.
+Vite contributes the modulepreload polyfill and CommonJS helpers; its complete
+packaged `LICENSE.md` is retained verbatim, including the Rollup CommonJS plugin
+notice and additional build-time dependency notices bundled in that upstream file.
+
+The build-only Vite hook in `scripts/production-licenses.mjs` inventories bundled
+JavaScript packages and includes Tailwind's license for the emitted stylesheet,
+even when minification removes its banner. It fails on an
+unreviewed bundled package or virtual runtime helper, changed license text, or installed/locked version
+mismatch. Dependency updates that change license wording require reviewing the
+new packaged text and updating its SHA-256 fingerprint. No license downloader
+or runtime request is added. Build tools without distributed runtime code are
+not otherwise included.
+
 ## Important disclaimer / הבהרה חשובה
 
 **Simulation only. The author is not a financial advisor. This tool does not
@@ -273,6 +294,12 @@ and runtime errors. Additional tests cover explicit agreement, blocked dismissal
 declining, keyboard focus, both legal pages, direct-link refresh, browser history,
 draft preservation, acceptance reset, absence of storage or data requests,
 GitHub link attributes, and accessibility before acceptance.
+The build's `postbuild` check compares both license artifacts byte-for-byte with
+the reviewed source notices. Unit tests cover missing, truncated, and SPA-HTML
+replacement artifacts and reject unreviewed bundled packages. Browser tests
+request both public text URLs, compare their complete bodies with the build
+files, and follow the Hebrew footer link on desktop and mobile, ensuring these
+URLs serve license text rather than the SPA fallback.
 `tests/dependency-portability.test.js` also rejects Microsoft-specific feed URLs
 in the committed lockfile and requires public npm tarball URLs without embedded
 credentials and with SHA-512 integrity. Package-source migrations must verify

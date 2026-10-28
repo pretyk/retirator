@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { productionLicenses } from './scripts/production-licenses.mjs';
 
 export const CONTENT_SECURITY_POLICY = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'";
 
@@ -8,6 +9,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    productionLicenses(),
     {
       name: 'production-content-policy',
       apply: 'build',
