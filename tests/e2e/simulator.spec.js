@@ -23,7 +23,7 @@ test('loads Hebrew RTL, privacy badge and complete numeric controls', async ({ p
   await expect(page.locator('html')).toHaveAttribute('lang', 'he');
   await expect(page.getByText('הנתונים מחושבים בדפדפן שלך בלבד — לא נשלחים לשרת')).toBeVisible();
   await expect(page.getByText('100% אנונימי', { exact: false })).toHaveCount(0);
-  await expect(page.getByRole('slider')).toHaveCount(8);
+  await expect(page.getByRole('slider')).toHaveCount(9);
   await expect(page.getByRole('textbox')).toHaveCount(8);
   await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('1,800,000');
   await expect(page.getByTestId('bridge-net')).not.toHaveText(/NaN|Infinity|—/);

@@ -193,6 +193,7 @@ function Delta({ value, dirty, unavailable }) {
 function CapitalChart({ state, result }) {
   const points = useMemo(() => trajectory(state, result), [state, result]);
   const [selected, setSelected] = useState(null);
+  const [hovered, setHovered] = useState(null);
   const uid = useId().replaceAll(':', '');
   const chartRef = useRef(null);
   const [{ width, height, fontSize }, setChartSize] = useState({ width: 760, height: 280, fontSize: 16 });
@@ -209,7 +210,9 @@ function CapitalChart({ state, result }) {
   const select = (event) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const fraction = ((event.clientX - rect.left) / rect.width * width - left) / (right - left);
-    setSelected(Math.round(Math.max(0, Math.min(1, fraction)) * (points.length - 1)));
+    const index = Math.round(Math.max(0, Math.min(1, fraction)) * (points.length - 1));
+    if (event.pointerType === 'mouse') setHovered(index);
+    else { setHovered(null); setSelected(index); }
   };
   const max = Math.max(1, state.targetCapital, ...points.flatMap((point) => [point.capital, point.pension])) * 1.12;
   const span = Math.max(1, state.pensionAge - state.currentAge);
@@ -223,11 +226,13 @@ function CapitalChart({ state, result }) {
     return [...marks, { age, x: x(age), row: crowded ? 1 - previous.row : 0 }];
   }, []);
   const last = points.at(-1);
-  const chosen = points[Math.min(selected ?? points.length - 1, points.length - 1)];
+  const selectedIndex = Math.min(hovered ?? selected ?? points.length - 1, points.length - 1);
+  const chosen = points[selectedIndex];
+  const valueText = `גיל ${number.format(chosen.age)}, הון זמין ${money(chosen.capital)}, חיסכון פנסיוני ${money(chosen.pension)}`;
   return <section className="panel chart-panel" aria-labelledby="chart-heading">
     <div className="card-heading"><div><span className="eyebrow">התמונה הגדולה</span><h3 id="chart-heading">הכסף שלך, לאורך הדרך</h3></div><ChartNoAxesCombined size={20} className="muted" /></div>
     <div className="chart-legend"><span><i className="dot indigo" />הון זמין לגישור</span><span><i className="dot emerald" />חיסכון פנסיוני</span><span className="muted">ערכים ריאליים · ₪</span></div>
-    <svg ref={chartRef} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="תחזית הון זמין וחיסכון פנסיוני מהגיל הנוכחי עד משיכת הפנסיה"     className="capital-chart" data-testid="capital-chart" onPointerDown={select} onPointerMove={select} onPointerLeave={(event) => { if (event.pointerType === 'mouse') setSelected(null); }}>
+    <svg ref={chartRef} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="תחזית הון זמין וחיסכון פנסיוני מהגיל הנוכחי עד משיכת הפנסיה" aria-describedby={`${uid}-help`} className="capital-chart" data-testid="capital-chart" onPointerDown={select} onPointerMove={select} onPointerLeave={(event) => { if (event.pointerType === 'mouse') setHovered(null); }}>
       <defs><linearGradient id={uid} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity=".42" /><stop offset="100%" stopColor="#6366f1" stopOpacity=".015" /></linearGradient></defs>
       {[0, 1, 2, 3, 4].map((tick) => <g key={tick}><line x1={left} x2={right} y1={y(max * tick / 4)} y2={y(max * tick / 4)} stroke="#262f45" strokeDasharray="3 6" /><text x={left - 12} y={y(max * tick / 4) + 4} textAnchor="end" className="svg-label">{compact(max * tick / 4)}</text></g>)}
       <rect x={x(state.bridgeStartAge)} y={top} width={Math.max(0, x(state.pensionAge) - x(state.bridgeStartAge))} height={bottom - top} fill="#6366f1" opacity=".035" />
@@ -236,9 +241,24 @@ function CapitalChart({ state, result }) {
       <path d={line('pension')} stroke="#34d399" strokeWidth="2.5" strokeDasharray="7 6" fill="none" />
       {ageMarks.map(({ age, x: position, row }) => <g key={age}><line x1={position} x2={position} y1={top} y2={bottom} stroke="#59627a" strokeDasharray="4 6" /><text x={position} y={bottom + fontSize * 1.5 * (row + 1)} textAnchor="middle" className="svg-label">גיל {age}</text></g>)}
       <circle cx={x(last.age)} cy={y(last.capital)} r="5" fill="#a5b4fc" stroke="#131826" strokeWidth="3" />
-      {selected !== null && <><line x1={x(chosen.age)} x2={x(chosen.age)} y1={top} y2={bottom} stroke="#94a3b8" /><circle cx={x(chosen.age)} cy={y(chosen.capital)} r="5" fill="#a5b4fc" /></>}
+      {(selected !== null || hovered !== null) && <><line x1={x(chosen.age)} x2={x(chosen.age)} y1={top} y2={bottom} stroke="#94a3b8" /><circle cx={x(chosen.age)} cy={y(chosen.capital)} r="5" fill="#a5b4fc" /></>}
     </svg>
-    <div className="chart-readout" data-testid="chart-readout">גיל {number.format(chosen.age)} <span>הון זמין <b dir="ltr">{money(chosen.capital)}</b></span><span>פנסיה <b dir="ltr">{money(chosen.pension)}</b></span></div>
+    <div className="chart-readout" data-testid="chart-readout">גיל <bdi dir="ltr">{number.format(chosen.age)}</bdi> <span>הון זמין <b dir="ltr">{money(chosen.capital)}</b></span><span>פנסיה <b dir="ltr">{money(chosen.pension)}</b></span></div>
+    <div className="chart-inspection">
+      <label htmlFor={`${uid}-point`}>בחירת גיל בגרף</label>
+      <p id={`${uid}-help`}>אפשר לבדוק כל חודש במחוון או בטבלת הנתונים. במקלדת: חצים לשינוי חודש, <bdi dir="ltr">Home</bdi> להתחלה ו־<bdi dir="ltr">End</bdi> לסוף.</p>
+      <input id={`${uid}-point`} className="chart-point-range" type="range" dir="ltr" min="0" max={points.length - 1} step="1" value={selectedIndex} disabled={points.length === 1} aria-valuetext={valueText} aria-describedby={`${uid}-help`} onChange={(event) => { setHovered(null); setSelected(Number(event.target.value)); }} />
+      <details className="chart-data">
+        <summary>טבלת נתוני הגרף</summary>
+        <div className="chart-table-scroll" role="region" aria-label="נתוני הגרף לפי חודש" tabIndex="0">
+          <table>
+            <caption>תחזית חודשית — סכומים משוערים בערכי היום</caption>
+            <thead><tr><th scope="col">גיל</th><th scope="col">הון זמין לגישור</th><th scope="col">חיסכון פנסיוני</th></tr></thead>
+            <tbody>{points.map((point, index) => <tr key={index}><th scope="row"><bdi dir="ltr">{number.format(point.age)}</bdi></th><td><bdi dir="ltr">{money(point.capital)}</bdi></td><td><bdi dir="ltr">{money(point.pension)}</bdi></td></tr>)}</tbody>
+          </table>
+        </div>
+      </details>
+    </div>
     <div className="chart-footer"><span><LockKeyhole size={13} /> החיסכון הפנסיוני אינו משמש למימון הגישור</span><span>{result.reachable ? `יעד הון: ${money(state.targetCapital)}` : 'יעד ההון אינו בר־השגה ללא הפקדות נוספות'}</span></div>
   </section>;
 }
@@ -473,6 +493,7 @@ export default function App() {
 }
 
 const styles = `
+.chart-inspection{margin:16px 0;font-size:var(--text-body);line-height:1.6}.chart-inspection label{font-weight:600}.chart-inspection p{color:#b5c1d7;font-size:var(--text-small);margin-top:8px}.chart-point-range{display:block;width:100%;height:44px;margin:8px 0;accent-color:#a5b4fc;cursor:pointer}.chart-data summary{cursor:pointer;min-height:44px;padding:10px 0;color:#c7d2fe}.chart-data summary:focus-visible,.chart-table-scroll:focus-visible{outline:2px solid #a5b4fc;outline-offset:4px}.chart-table-scroll{max-height:22rem;overflow:auto}.chart-data table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:var(--text-small);font-variant-numeric:tabular-nums}.chart-data caption{padding:10px 0;text-align:start;color:#b5c1d7}.chart-data th,.chart-data td{padding:12px 4px;border-bottom:1px solid #39435a;text-align:start;overflow-wrap:anywhere}.chart-data th:first-child{width:20%}
 .privacy-more{display:flex;align-items:center;gap:5px;margin-top:5px;text-decoration:underline;text-underline-offset:3px;color:#a7f3d0}
 .text-link{color:#c7d2fe;text-decoration:underline;text-underline-offset:4px;font-size:12px;line-height:1.9}
 .footer-container{max-width:1440px;margin:auto;padding:0 48px}.site-footer nav{display:flex;align-items:center;gap:18px;flex-wrap:wrap}.site-footer nav a:hover{color:#eef2fc}.github-link{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #39435a;border-radius:6px;color:#c7d2fe}
