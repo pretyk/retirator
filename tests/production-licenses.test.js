@@ -30,6 +30,7 @@ function bundle(extraModules = {}) {
 describe('production license distribution', () => {
   it('retains the complete project and exact packaged notices, including transitive code and CSS', () => {
     const files = distributionNotices();
+    expect(files['THIRD_PARTY_NOTICES.txt'].startsWith('\uFEFF')).toBe(true);
     expect(files['LICENSE.txt']).toBe(readFileSync(new URL('../LICENSE', import.meta.url), 'utf8'));
     for (const name of Object.keys(reviewedPackages)) {
       const license = readFileSync(new URL(`../node_modules/${name}/${name === 'vite' ? 'LICENSE.md' : 'LICENSE'}`, import.meta.url), 'utf8');

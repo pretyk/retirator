@@ -36,6 +36,8 @@ not impose additional restrictions on the rights granted by the MIT License.
 
 Every production build ships `/LICENSE.txt` (the project's unchanged MIT license)
 and `/THIRD_PARTY_NOTICES.txt`, linked from the Hebrew app footer. The notices
+use a UTF-8 byte-order mark so Hebrew renders correctly on direct text navigation
+without changing hosting headers. They
 include the complete LICENSE files from the exact installed, locked React,
 React DOM, Scheduler (transitive), Lucide React, Tailwind CSS, and Vite packages.
 Tailwind is a development dependency but contributes distributed CSS. Lucide's

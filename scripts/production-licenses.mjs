@@ -41,7 +41,8 @@ export function distributionNotices() {
   }
   return {
     'LICENSE.txt': projectLicense,
-    'THIRD_PARTY_NOTICES.txt': [
+    // A BOM makes direct text navigation render Hebrew as UTF-8 without changing host headers.
+    'THIRD_PARTY_NOTICES.txt': '\uFEFF' + [
       'רישיונות והודעות זכויות יוצרים',
       'רישיון הפרויקט והנוסחים המקוריים של רישיונות הרכיבים מובאים להלן.',
       `Retirator (MIT)\n${'='.repeat(72)}\n${projectLicense}`,
