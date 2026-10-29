@@ -174,7 +174,12 @@ Inline styles are required by the single-file design. Do not add analytics.
   Results, chart, and formula-modal variables stay **committed** until clicking
   **חשב סימולציה**. Invalid inputs and timelines explicitly block that action.
 - The chart follows actual monthly end-of-period withdrawals, with an
-  independently compounded pension balance. Point at the chart to inspect ages.
+  independently compounded pension balance. Point at or tap the chart to inspect
+  ages, or use the labeled age slider: arrow keys move one month, Home selects
+  the first month, and End selects the last. Its accessible value includes the
+  selected age and both balances. The expandable Hebrew data table exposes every
+  plotted month and both series without requiring slider interaction. All chart
+  inspection remains tied to the committed scenario until calculating again.
 - The formula button opens a keyboard-accessible native dialog. Celebrations
   and deficit feedback respect reduced-motion preferences.
 - Profile shortcuts have been removed; initial balances are illustrative defaults.
