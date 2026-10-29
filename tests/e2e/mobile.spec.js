@@ -4,7 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 const SMALL_PHONE = { viewport: { width: 360, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 
 const acceptDisclaimer = async (page) => {
-  await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+  await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).check();
   await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
 };
 const dock = (page) => page.locator('.calculate-dock');
@@ -50,7 +50,7 @@ for (const [name, device] of [['default phone', {}], ['small 360px phone', SMALL
       const viewport = page.viewportSize();
       expect(box.x).toBeGreaterThanOrEqual(0);
       expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
-      await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).tap();
+      await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).tap();
       await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).tap();
       await expect(dialog).toBeHidden();
     });
@@ -59,7 +59,7 @@ for (const [name, device] of [['default phone', {}], ['small 360px phone', SMALL
       await page.goto('/');
       await acceptDisclaimer(page);
       await expectNoOverflow(page);
-      for (const hash of ['#privacy', '#disclaimer']) {
+      for (const hash of ['#privacy', '#disclaimer', '#accessibility']) {
         await page.goto(`/${hash}`);
         await expect(page.locator('#information')).toBeVisible();
         await expectReadableText(page.locator('#information'));

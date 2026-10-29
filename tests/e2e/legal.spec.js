@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const agreement = (page) => page.getByRole('checkbox', { name: /קראתי והבנתי/ });
+const agreement = (page) => page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ });
 const enter = (page) => page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true });
 const accept = async (page) => { await agreement(page).check(); await enter(page).click(); };
 const gate = (page) => page.getByRole('dialog', { name: 'סימולציה בלבד. לא ייעוץ פיננסי.' });
@@ -22,6 +22,9 @@ test('entry requires affirmative agreement and cannot be dismissed by Escape or 
   await expect(gate(page)).toContainText('זהו אתר סטטי. הנתונים שהוזנו אינם נשלחים לשרת.');
   await expect(gate(page)).toContainText('אנונימיות היא במאמץ סביר בלבד');
   await expect(gate(page)).toContainText('ספקי אינטרנט וענן עשויים לתעד');
+  await expect(gate(page)).not.toContainText('קראתי והבנתי');
+  await expect(gate(page)).toContainText('אין בסימון הצהרה על קריאה או הבנה של התוכן');
+  await expect(gate(page)).toContainText('האישור אינו ויתור על זכויות או פטור מאחריות לפי דין');
   const backdrop = await gate(page).evaluate((element) => getComputedStyle(element, '::backdrop').backdropFilter);
   expect(backdrop).toMatch(/blur\(/);
   await page.keyboard.press('Escape');
@@ -61,7 +64,9 @@ test('legal information is readable before agreement and returning does not bypa
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('הודעת הבהרה ותנאי שימוש');
   await expect(page.getByText(/מחבר האתר אינו יועץ פיננסי ואינו מספק/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'השוק, האינפלציה, הריבית והחוקים משתנים' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'אחריות המשתמש והגבלת אחריות' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'אחריות וזכויות לפי דין' })).toBeVisible();
+  await expect(page.locator('#information')).not.toContainText('אינם אחראים לנזק');
+  await expect(page.locator('#information')).toContainText('אין בו הצהרה שקראת או הבנת');
   await page.getByRole('link', { name: 'חזרה לסימולטור', exact: true }).first().click();
   await expect(gate(page)).toBeVisible();
   await expect(agreement(page)).not.toBeChecked();
@@ -118,9 +123,13 @@ for (const route of ['privacy', 'disclaimer']) {
     await expect(page.getByText(/טעינת העמוד וקובצי היישום מחייבת בקשות רשת/)).toBeVisible();
     await expect(page.getByText(/היישום אינו שולח לשרת או לצד שלישי אף אחד מהנתונים שהוזנו/)).toBeVisible();
     await expect(page.getByRole('heading', { name: 'אנונימיות במאמץ סביר — לא הבטחה מוחלטת' })).toBeVisible();
-    await expect(page.getByText(/ספק האינטרנט וספקי הענן, האחסון וההפצה/)).toContainText('למחבר האתר אין שליטה');
-    await expect(page.getByText(/ספק האינטרנט וספקי הענן, האחסון וההפצה/)).toContainText('במידה המרבית המותרת בדין');
-    await expect(page.getByText(/ספק האינטרנט וספקי הענן, האחסון וההפצה/)).toContainText('אין בכך כדי לשלול זכויות או לפטור מאחריות שלא ניתן להגביל לפי דין');
+    await expect(page.getByText(/ספק האינטרנט וספקי הענן, האחסון וההפצה/)).toContainText('אין בכך כדי לשלול זכויות או לפטור מאחריות לפי דין');
+    await expect(page.locator('#information')).toContainText('Microsoft Azure Static Web Apps');
+    await expect(page.locator('#information')).toContainText('GitHub Pages');
+    await expect(page.locator('#information')).toContainText('טרם אומתו במלואם');
+    const contact = page.getByRole('link', { name: 'retiratorcom@gmail.com', exact: true });
+    await expect(contact).toHaveAttribute('href', 'mailto:retiratorcom@gmail.com');
+    await expect(page.locator('#information')).toContainText('כתובת זו היא ערוץ פנייה לשירות, לא זיהוי משפטי');
     await expect(page.getByText('100% אנונימי', { exact: false })).toHaveCount(0);
     await page.reload();
     await expect(page).toHaveURL(new RegExp(`#${route}$`));
@@ -131,6 +140,48 @@ for (const route of ['privacy', 'disclaimer']) {
     await expect(gate(page)).toBeVisible();
   });
 }
+
+test('accessibility statement and contact are available before acceptance and preserve the gate', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'נגישות ויצירת קשר', exact: true }).click();
+  await expect(page).toHaveURL(/#accessibility$/);
+  await expect(gate(page)).toHaveCount(0);
+  await expect(page.getByRole('heading', { level: 1, name: 'הצהרת נגישות' })).toBeFocused();
+  await expect(page).toHaveTitle('הצהרת נגישות | Retirator');
+  const information = page.locator('#information');
+  await expect(information).toContainText('לא הושלמה בדיקה ידנית מקיפה');
+  await expect(information).toContainText('לא נטען כאן לפטור');
+  await expect(information).toContainText('אפשר לפנות בדוא״ל ללא חשבון גיטהאב');
+  const contact = page.getByRole('link', { name: 'retiratorcom@gmail.com', exact: true });
+  await contact.focus();
+  await expect(contact).toBeFocused();
+  await expect(contact).toHaveAttribute('href', 'mailto:retiratorcom@gmail.com');
+  await expect(information).toContainText('אין לצרף נתונים פיננסיים');
+  await expect(information).toContainText('מתקבלת בתיבת ג׳ימייל');
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations).toEqual([]);
+  await page.getByRole('link', { name: 'חזרה לסימולטור', exact: true }).first().click();
+  await expect(gate(page)).toBeVisible();
+  await expect(agreement(page)).not.toBeChecked();
+});
+
+test('accessibility navigation preserves draft and acceptance without data requests', async ({ page }) => {
+  await page.goto('/');
+  await accept(page);
+  const before = await page.getByTestId('bridge-net').textContent();
+  await page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true }).fill('2,345,678');
+  const requests = [];
+  page.on('request', request => requests.push(request.url()));
+  await page.locator('footer').getByRole('link', { name: 'הצהרת נגישות', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('הצהרת נגישות');
+  await page.goBack();
+  await expect(gate(page)).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true })).toHaveValue('2,345,678');
+  await expect(page.getByTestId('bridge-net')).toHaveText(before);
+  expect(requests).toEqual([]);
+  await noStorage(page);
+});
 
 test('contribution link targets the repository without sending referrer data', async ({ page }) => {
   await page.goto('/#privacy');

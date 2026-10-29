@@ -13,7 +13,7 @@ const setSlider = async (page, label, value) => {
 };
 
 const acceptDisclaimer = async (page) => {
-  await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+  await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).check();
   await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
 };
 test.beforeEach(async ({ page }) => { await page.goto('/'); await acceptDisclaimer(page); });

@@ -50,7 +50,7 @@ for (const width of [320, 360, 720, 721, 820, 1024, 1150, 1280, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
     await expectReadableLayout(page.getByRole('dialog'));
-    await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+    await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).check();
     await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
     await expectReadableLayout(page.locator('.app-shell'));
 
@@ -77,7 +77,7 @@ for (const width of [320, 360, 720, 721, 820, 1024, 1150, 1280, 1440]) {
     await page.getByRole('button', { name: 'הצג נוסחת חישוב' }).click();
     await expectReadableLayout(page.getByRole('dialog'));
     await page.getByRole('button', { name: 'סגור הסבר' }).click();
-    for (const hash of ['#privacy', '#disclaimer']) {
+    for (const hash of ['#privacy', '#disclaimer', '#accessibility']) {
       await page.goto(`/${hash}`);
       await expectReadableLayout(page.locator('#information'));
     }
@@ -88,7 +88,7 @@ for (const width of [320, 360, 390, 721, 1440]) {
   test(`enlarged browser fonts preserve complete values at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
-    await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+    await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).check();
     await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
     await page.evaluate(() => { document.documentElement.style.fontSize = '125%'; });
     await expect(page.getByRole('textbox', { name: 'גיל נוכחי', exact: true })).toHaveCSS('font-size', '25px');
@@ -107,7 +107,7 @@ for (const width of [320, 360, 390, 721, 1440]) {
 
 test('chart typography follows resizing without changing committed results', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+  await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).check();
   await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
   const result = await page.getByTestId('bridge-net').textContent();
   for (const width of [1440, 320, 820]) {
