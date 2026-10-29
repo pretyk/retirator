@@ -18,12 +18,29 @@ the app, or included in the page URL or asset requests.
 cloud, hosting, or delivery providers may process, monitor, or log request
 metadata available to them under their own policies and applicable law (for
 example, network addresses and access times; the serving provider may also see
-requested resource paths and browser details). The author does not control
-these providers' activities and cannot guarantee an absence of infrastructure
-logs. To the maximum extent permitted by law, the author, maintainers, and
-contributors disclaim responsibility for those providers' processing,
-monitoring, or logging. This does not exclude rights or liability that cannot
-lawfully be excluded.
+requested resource paths and browser details). Absence of infrastructure logs
+or deletion of records controlled by an independent provider is not guaranteed.
+This disclosure does not exclude the service operator's responsibility under law.
+
+The simulator uses **Microsoft Azure Static Web Apps**; the separate introduction
+uses **GitHub Pages**. Provider retention, log access, processing locations and
+contractual privacy roles have not yet been fully verified. Provider processing
+must not automatically be characterized as independent of the operator.
+See [Microsoft's privacy statement](https://www.microsoft.com/privacy/privacystatement)
+and [GitHub's privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement);
+the actual hosting agreements also need review.
+
+**Service contact:** Retirator, [retiratorcom@gmail.com](mailto:retiratorcom@gmail.com),
+for accessibility, privacy and terms requests without a GitHub account.
+The user supplied this publishable address; it is a service contact, not a
+verified legal identity of a person or entity. Email is voluntary and external
+to the simulator: sender details and message content are processed by email
+providers and received in Gmail to handle the request. Mail retention/access
+arrangements still require verification. Do not send financial inputs, identity
+documents, or screenshots containing personal information. Requests concerning
+personal information can be sent here and assessed under applicable law and
+the information actually controlled by the service; deletion of independent
+providers' records is not promised.
 
 ## License
 
@@ -109,31 +126,77 @@ Retirator נועד ללמידה ולהמחשת תרחישים בלבד. מחבר
 ברשת. ספק האינטרנט וספקי הענן, האחסון וההפצה עשויים לעבד, לנטר או לתעד
 מידע על בקשות הרשת, לפי המידע הזמין לכל אחד מהם, מדיניותו והדין החל.
 מידע זה עשוי לכלול כתובת רשת, זמני גישה, ובשירות שמגיש את הקבצים גם
-כתובות משאבים ופרטי דפדפן. למחבר האתר אין שליטה על פעולות אלה או אפשרות
-להבטיח שלא יתבצעו. במידה המרבית המותרת בדין, המחבר, המתחזקים והתורמים אינם
-אחראים לעיבוד, לניטור או לתיעוד שעושים ספקים אלה. אין בכך כדי לשלול זכויות
-או לפטור מאחריות שלא ניתן להגביל לפי דין.
+כתובות משאבים ופרטי דפדפן. אין באתר התחייבות להיעדר תיעוד בתשתיות או
+למחיקת רישומים שבשליטת ספק עצמאי. אין בכך כדי לשלול זכויות או לפטור
+מאחריות לפי דין. הסימולטור מוגש באמצעות שירות האחסון של מיקרוסופט,
+ועמוד ההיכרות באמצעות שירות העמודים של גיטהאב. תקופות השמירה, הרשאות
+הגישה, מיקומי העיבוד וחלוקת האחריות טרם אומתו במלואם.
 
-### הגבלת אחריות וזכויות לפי דין
+לפניות נגישות, פרטיות ותנאי שימוש לשירות Retirator:
+[retiratorcom@gmail.com](mailto:retiratorcom@gmail.com).
+זהו ערוץ פנייה לשירות, לא זיהוי משפטי של אדם או תאגיד.
+אין לשלוח נתונים פיננסיים, מסמכי זיהוי או צילום מסך עם מידע אישי.
+פנייה נשלחת רק ביוזמתך באמצעות ספק הדואר שלך ומתקבלת בתיבת ג׳ימייל.
+תוכן הפנייה, כתובת השולח ופרטי ההודעה מעובדים לצורך הטיפול באמצעות ספקי
+הדואר; תקופות השמירה והסדרי הטיפול טרם אומתו במלואם.
 
-השימוש באתר ובתוצאותיו הוא לפי בחירת המשתמש ועל אחריותו, בכפוף לדין החל.
-האתר ניתן **כפי שהוא וכפי שהוא זמין**, ללא מצג או אחריות מפורשים או
-משתמעים, ככל שהדין מתיר, לרבות ביחס לדיוק, זמינות או התאמה למטרה מסוימת.
-במידה המרבית המותרת בדין, המחבר, המתחזקים והתורמים אינם אחראים לנזק או
-הפסד הנובעים מהשימוש, מחוסר יכולת להשתמש, מהסתמכות על התוכן או משגיאות
-והשמטות, לרבות הפסדי השקעה, אובדן רווח או חיסכון, חבות מס ונזק ישיר,
-עקיף, נלווה או תוצאתי.
+### אחריות וזכויות לפי דין
 
-אין בהבהרה כדי לשלול זכות קוגנטית או לפטור מאחריות שאי אפשר להגביל או
-לשלול על פי דין. ההגבלות חלות רק במידה המותרת בדין. האישור בכניסה מציין
-הבנה של מטרת הכלי ומגבלותיו ואינו ויתור על זכויות שלא ניתן לוותר עליהן.
+הודעת ההבהרה מתארת את מטרת הכלי ואת מגבלותיו; היא אינה פוטרת את מפעילי
+השירות מאחריות לפי דין ואינה מגבילה זכות, סעד או פנייה לערכאות.
+אין בה פטור מאחריות לנזק גוף, למעשה זדון או לכל אחריות אחרת לפי דין.
+האישור בכניסה אינו ויתור על זכויות או על טענות בקשר לשירות.
+
+הסימון בכניסה מבטא הסכמה לתנאי השימוש בלבד. אין בו הצהרה שקראת או הבנת
+את כל התוכן, אישור לעובדה אישית או ויתור על זכויות.
+אפשר לעיין בעמודי המידע ולפנות לשירות גם ללא הסכמה.
 אם אינך מסכים או מסכימה לתנאים, אין להשתמש בסימולטור.
 
 **Maintainer note:** this disclaimer is a draft, not legal advice or a guarantee
 of enforceability. Have an Israeli lawyer review it against the actual service,
 operator, audience, hosting arrangements, and applicable law before relying on it.
 Do not assume a disclaimer excludes liability that the law does not allow to be
-excluded. No server-side consent evidence is collected or retained.
+excluded. The former blanket liability exclusion and mandatory reading/
+understanding declaration have been removed, not certified enforceable.
+No server-side consent evidence is collected or retained.
+
+## Accessibility and outstanding legal assessments
+
+The Hebrew [accessibility statement](https://nice-pebble-0150fe203.2.azurestaticapps.net/#accessibility)
+is readable before accepting the simulator terms, links from the footer and
+entry dialog, and covers both public surfaces. The introduction also has its
+own prominent statement/contact section. It describes keyboard controls,
+chart inspection and a semantic data table, dialog focus, field labels, zoom,
+reduced motion, and the known limits of automated Chromium checks.
+No comprehensive manual screen-reader/cross-browser assessment, certification,
+exemption or accessibility-coordinator appointment is claimed.
+
+**Assessment record — 28 October 2026:** source/build/browser checks can establish
+technical behavior, not professional legal conclusions. The service contact is
+confirmed for publication; the operator's legal identity, relevant turnover,
+applicable exemptions and need for an accessibility coordinator are unconfirmed.
+Do not treat the absence of fees or open-source status as an exemption.
+Issues [#18](https://github.com/pretyk/retirator/issues/18),
+[#21](https://github.com/pretyk/retirator/issues/21) and
+[#22](https://github.com/pretyk/retirator/issues/22) retain the respective
+operator-specific accessibility, hosting/privacy and terms-review prerequisites.
+Their public UI mitigations are not a substitute for completing those checks.
+Have an Israeli adviser assess the actual service and current law; record the
+date, factual basis, scope and outcome before marking the assessments complete.
+
+The [regulatory-perimeter assessment in #19](https://github.com/pretyk/retirator/issues/19)
+also remains open. Current observable behavior: neutral user-directed arithmetic,
+no named-product ranking, transactions, affiliate links or lead collection
+identified in the application, and illustrative financial assumptions.
+Commercial arrangements, operator licensing status and the legal classification
+are not established by source inspection. Income-based colors/feedback are not
+a suitability assessment or a safe-withdrawal determination.
+Before adding recommendations, optimized withdrawal ages, product selection,
+referrals/commissions, lead collection or personal advisory services, obtain a
+fresh Israeli regulatory assessment. Do not claim that a disclaimer creates a
+licensing exemption, and do not silently change financial assumptions.
+Reassess privacy/accessibility obligations when the operator, hosting, data
+processing, audience, commercial activity, features or applicable law changes.
 
 ## Run locally
 
@@ -175,7 +238,8 @@ Inline styles are required by the single-file design. Do not add analytics.
   is blurred and the underlying controls are inert. Escape and backdrop clicks
   do not accept or dismiss it. Declining leads to the information page.
 - Read the full disclaimer at `/#disclaimer` and the privacy explanation at
-  `/#privacy`, including before acceptance. These are client-side hash routes,
+  `/#privacy`, and the accessibility statement/contact at `/#accessibility`,
+  including before acceptance. These are client-side hash routes,
   so direct links and refresh work on static hosts without routing configuration.
 - Acceptance lives in React memory only: no cookies, local/session storage,
   timestamp, user identifier, or consent log. Reloading requires acceptance again.
@@ -298,7 +362,7 @@ formatted inputs, sliders and steppers, invalid timelines, zero-rate
 and zero-duration scenarios, impossible targets, confetti and risk precedence,
 modal focus and Escape, overflow, axe accessibility, reduced motion, privacy,
 and runtime errors. Additional tests cover explicit agreement, blocked dismissal,
-declining, keyboard focus, both legal pages, direct-link refresh, browser history,
+declining, keyboard focus, all three information pages, direct-link refresh, browser history,
 draft preservation, acceptance reset, absence of storage or data requests,
 GitHub link attributes, and accessibility before acceptance.
 The build's `postbuild` check compares both license artifacts byte-for-byte with

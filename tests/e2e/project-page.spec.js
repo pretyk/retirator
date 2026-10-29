@@ -97,3 +97,20 @@ test('project page meets accessibility checks', async ({ page }) => {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze();
   expect(results.violations).toEqual([]);
 });
+
+test('project page publishes accessible contact and qualified accessibility disclosures', async ({ page }) => {
+  await page.goto(pageUrl);
+  const statementLink = page.locator('footer').getByRole('link', { name: 'הצהרת נגישות ויצירת קשר', exact: true });
+  await statementLink.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#accessibility$/);
+  const statement = page.locator('#accessibility');
+  await expect(statement.getByRole('heading', { level: 2 })).toHaveText('הצהרת נגישות ויצירת קשר');
+  await expect(statement.getByRole('link', { name: 'retiratorcom@gmail.com', exact: true }))
+    .toHaveAttribute('href', 'mailto:retiratorcom@gmail.com');
+  await expect(statement).toContainText('לא הושלמה בדיקה ידנית מקיפה');
+  await expect(statement).toContainText('לא נטען כאן לפטור או למינוי רכז');
+  await expect(statement).toContainText('אין לשלוח נתונים פיננסיים');
+  await expect(statement.getByRole('link', { name: 'להצהרה המלאה ולפרטי ההתאמות בסימולטור' }))
+    .toHaveAttribute('href', 'https://nice-pebble-0150fe203.2.azurestaticapps.net/#accessibility');
+});

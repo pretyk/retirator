@@ -10,7 +10,7 @@ const sliderFor = (page) => page.getByRole('slider', { name: 'בחירת גיל 
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
+  await page.getByRole('checkbox', { name: /אני מסכים\/ה לתנאי השימוש/ }).check();
   await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
 });
 
