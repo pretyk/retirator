@@ -484,7 +484,7 @@ export default function App() {
       </div>
     </main>
     {page !== 'simulator' && <InformationPage page={page} />}
-    <div className="footer-container"><footer className="site-footer"><span dir="ltr">Retirator</span><nav aria-label="קישורי אתר"><a href="#privacy">פרטיות</a><a href="#disclaimer">הבהרה ותנאי שימוש</a><a className="github-link" href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label="תרומה לקוד ב־GitHub — נפתח בלשונית חדשה"><Github size={15} />תרומה לקוד</a></nav><span><ShieldCheck size={14} /> המידע שלך נשאר אצלך</span></footer></div>
+    <div className="footer-container"><footer className="site-footer"><span dir="ltr">Retirator</span><nav aria-label="קישורי אתר"><a href="#privacy">פרטיות</a><a href="#disclaimer">הבהרה ותנאי שימוש</a><a href="/THIRD_PARTY_NOTICES.txt">רישיונות וזכויות יוצרים</a><a className="github-link" href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label="תרומה לקוד ב־GitHub — נפתח בלשונית חדשה"><Github size={15} />תרומה לקוד</a></nav><span><ShieldCheck size={14} /> המידע שלך נשאר אצלך</span></footer></div>
     <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
     {page === 'simulator' && !accepted && <EntryDisclaimer onAccept={() => setAccepted(true)} />}
     {page === 'simulator' && accepted && modal && <FormulaModal result={{ ...committed, targetCapital: committedState.targetCapital }} onClose={() => setModal(false)} />}
