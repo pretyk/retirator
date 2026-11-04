@@ -23,12 +23,27 @@ describe('monthly end-of-period drawdown', () => {
   it('compounds pre-bridge assets annually without new contributions', () => {
     expect(calculate(DEFAULT_STATE).pv).toBeCloseTo(3000000 * 1.04 ** 2, 6);
   });
-  it('taxes only the liquid proportion', () => {
-    const state = { ...DEFAULT_STATE, liquidSavings: 1000000, hishtalmut: 3000000 };
+  it('taxes portfolio and other savings but not qualifying hishtalmut', () => {
+    const state = { ...DEFAULT_STATE, savingsBreakdown: true, portfolio: 600000, otherSavings: 400000, hishtalmut: 3000000 };
     expect(calculate(state).bridgeTax).toBe(0.0375);
   });
+  it('uses the combined input only in simple mode and assumes 15% tax', () => {
+    const result = calculate({ ...DEFAULT_STATE, hishtalmut: 1000000, portfolio: 9000000, otherSavings: 2000000 });
+    expect(result.startingCapital).toBe(3000000);
+    expect(result.bridgeTax).toBe(0.15);
+    expect(result.net).toBeCloseTo(result.gross * 0.85, 8);
+  });
+  it('sums the breakdown once without adding the simple input again', () => {
+    const state = { ...DEFAULT_STATE, savingsBreakdown: true, portfolio: 1000000, otherSavings: 800000, hishtalmut: 1200000 };
+    const result = calculate(state);
+    expect(result.startingCapital).toBe(3000000);
+    expect(result.bridgeTax).toBe(0.09);
+    expect(result.pv).toBeCloseTo(calculate(DEFAULT_STATE).pv, 8);
+    expect(result.gross).toBeCloseTo(calculate(DEFAULT_STATE).gross, 8);
+    expect(trajectory(state, result).at(-1).capital).toBeCloseTo(state.targetCapital, 5);
+  });
   it('keeps exempt-only draws untaxed', () => {
-    const result = calculate({ ...DEFAULT_STATE, liquidSavings: 0 });
+    const result = calculate({ ...DEFAULT_STATE, savingsBreakdown: true, portfolio: 0, hishtalmut: 1200000 });
     expect(result.net).toBe(result.gross);
   });
   it('handles an empty portfolio', () => {
@@ -40,7 +55,7 @@ describe('monthly end-of-period drawdown', () => {
     const state = { ...DEFAULT_STATE, annualReturn: 0, targetCapital: 5000000 };
     const result = calculate(state);
     expect(result.valid).toBe(false);
-    expect(result.issues).toContain('יעד ההון בגיל משיכת הפנסיה לא יכול להיות גבוה מסך החיסכון הנזיל וקרן ההשתלמות כיום.');
+    expect(result.issues).toContain('יעד ההון בגיל משיכת הפנסיה לא יכול להיות גבוה מסך החיסכון הנזיל כיום.');
     expect(trajectory(state, result)).toEqual([]);
   });
   it('allows same-day bridge and pension start without inventing a monthly payment', () => {
@@ -93,21 +108,25 @@ describe('pension and tax scenario assumptions', () => {
 });
 
 describe('validation and trajectories', () => {
-  it.each(['liquidSavings', 'hishtalmut'])('caps %s at 10 million inclusive', (key) => {
-    for (const value of [0, 9999999.99, 10000000]) {
-      const state = { ...DEFAULT_STATE, [key]: value };
+  it.each(['liquidSavings', 'hishtalmut', 'portfolio', 'otherSavings'])('caps %s at the 20 million combined limit inclusive', (key) => {
+    const base = { ...DEFAULT_STATE, savingsBreakdown: key !== 'liquidSavings', portfolio: 0, targetCapital: 0 };
+    for (const value of [0, 19999999.99, 20000000]) {
+      const state = { ...base, [key]: value };
       expect(validateState(state)).toEqual([]);
       expect(calculate(state).valid).toBe(true);
     }
-    for (const value of [10000000.01, 10000001, 100000000]) {
-      const state = { ...DEFAULT_STATE, [key]: value };
+    for (const value of [20000000.01, 20000001, 100000000]) {
+      const state = { ...base, [key]: value };
       expect(validateState(state).length).toBeGreaterThan(0);
       expect(calculate(state).valid).toBe(false);
     }
   });
-  it('allows both liquid assets at their individual maximum', () => {
-    expect(calculate({ ...DEFAULT_STATE, liquidSavings: 10000000, hishtalmut: 10000000 }))
+  it('preserves the previous 20 million total capacity, including a breakdown', () => {
+    expect(calculate({ ...DEFAULT_STATE, savingsBreakdown: true, portfolio: 10000000, hishtalmut: 10000000 }))
       .toMatchObject({ valid: true, startingCapital: 20000000 });
+    expect(calculate({ ...DEFAULT_STATE, liquidSavings: 20000000 }))
+      .toMatchObject({ valid: true, startingCapital: 20000000 });
+    expect(calculate({ ...DEFAULT_STATE, savingsBreakdown: true, portfolio: 10000000, hishtalmut: 10000000, otherSavings: 0.01 }).valid).toBe(false);
   });
   it.each(['pensionBalance'])('retains the 100 million maximum for %s', (key) => {
     expect(validateState({ ...DEFAULT_STATE, [key]: 100000000 })).toEqual([]);
@@ -117,25 +136,31 @@ describe('validation and trajectories', () => {
   it.each([
     [0, 0, 0], [1000000, 0, 1000000], [0, 1200000, 1200000], [1800000, 1200000, 3000000],
     [10000000, 10000000, 20000000], [123456.78, 234567.89, 358024.67],
-  ])('caps the reserve at liquid assets %s + %s, inclusive', (liquidSavings, hishtalmut, total) => {
-    const state = { ...DEFAULT_STATE, liquidSavings, hishtalmut, targetCapital: total };
+  ])('caps the reserve at liquid assets %s + %s, inclusive', (portfolio, hishtalmut, total) => {
+    const state = { ...DEFAULT_STATE, savingsBreakdown: true, portfolio, hishtalmut, targetCapital: total };
     expect(validateState(state)).toEqual([]);
     expect(calculate(state)).toMatchObject({ valid: true, reachable: true });
     expect(calculate({ ...state, targetCapital: total + 0.01 }).valid).toBe(false);
     expect(calculate({ ...state, targetCapital: 0 }).valid).toBe(true);
   });
   it('accepts an exact agorot limit despite binary floating-point addition', () => {
-    const state = { ...DEFAULT_STATE, liquidSavings: 1800000.01, hishtalmut: 1200000.13, targetCapital: 3000000.14, annualReturn: 0 };
+    const state = { ...DEFAULT_STATE, savingsBreakdown: true, portfolio: 1800000.01, hishtalmut: 1200000.13, otherSavings: 0.07, targetCapital: 3000000.21, annualReturn: 0 };
     expect(validateState(state)).toEqual([]);
-    expect(calculate(state)).toMatchObject({ valid: true, startingCapital: 3000000.14, gross: 0 });
-    expect(calculate({ ...state, targetCapital: 3000000.15 }).valid).toBe(false);
+    expect(calculate(state)).toMatchObject({ valid: true, startingCapital: 3000000.21, gross: 0 });
+    expect(calculate({ ...state, targetCapital: 3000000.22 }).valid).toBe(false);
   });
   it.each([
     { pensionAge: 50 }, { bridgeStartAge: 49 }, { currentAge: NaN }, { liquidSavings: -1 },
     { annualReturn: Infinity }, { currentAge: 50.5 }, { gender: 'unknown' },
+    { savingsBreakdown: 'true' }, { savingsBreakdown: true, portfolio: NaN },
+    { savingsBreakdown: true, otherSavings: -1 }, { savingsBreakdown: true, hishtalmut: Infinity },
   ])('rejects invalid state %j explicitly', (changes) => {
     expect(validateState({ ...DEFAULT_STATE, ...changes }).length).toBeGreaterThan(0);
     expect(calculate({ ...DEFAULT_STATE, ...changes }).valid).toBe(false);
+  });
+  it('matches the guide example without returns or a reserve', () => {
+    expect(calculate({ ...DEFAULT_STATE, currentAge: 50, bridgeStartAge: 50, pensionAge: 60, liquidSavings: 1200000, targetCapital: 0, annualReturn: 0 }))
+      .toMatchObject({ valid: true, months: 120, gross: 10000, net: 8500, bridgeTax: 0.15 });
   });
 
   describe('feedback thresholds', () => {
