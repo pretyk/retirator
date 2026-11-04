@@ -13,16 +13,18 @@ These are **simplified model assumptions**, not a statement of current law. Ever
 | Warning scenario under 60, not an available pension | 35% illustrative haircut, not a legal tax calculation | `taxStatus` |
 | Pension scenario from 60 to the statutory age | 20% illustrative haircut, not an actual tax rate or eligibility determination | `taxStatus` |
 | Pension scenario at or after the statutory age | 5% illustrative haircut, not an automatic or complete exemption | `taxStatus` |
-| Bridge tax on liquid savings | 15% blended effective rate × the liquid share | `calculate` |
-| Keren Hishtalmut | 0% tax | `calculate` |
+| Bridge tax on liquid savings | Simple mode: 15% on the entire withdrawal. Advanced mode: 15% × the portfolio + other-savings share | `calculate` |
+| Keren Hishtalmut | 0% tax only when explicitly allocated in advanced mode; assumed liquid and qualifying | `calculate` |
 | Annuity factor | 200 at 67, +4 per year earlier, −3 per year later | `calculate` |
 | Bridge drawdown | Excel PMT, end-of-month, `r = annualReturn / 100 / 12` (`annualReturn` is a percent, e.g. 4) | `pmt` |
 | Pre-bridge growth | Annual compounding at the real return | `calculate` |
-| Pension-age reserve target | At most current liquid savings + Keren Hishtalmut; excludes pension assets and projected returns (input constraint, not a legal rule) | `validateState` |
+| Pension-age reserve target | At most current total liquid savings (one amount or the sum of hishtalmut, portfolio and other savings); excludes pension assets and projected returns (input constraint, not a legal rule) | `validateState` |
+| Liquid capital input ceiling | ₪20 million overall in either mode, retaining the previous combined capacity; categories share that ceiling rather than separate ₪10 million caps | `validateState` |
 
 ## Known simplifications
 
 - Capital gains tax in Israel is 25% on real gains. The 15% blended rate is a rough estimate because only part of each withdrawal is gain.
+- Other savings use the same illustrative 15% rate as the portfolio, not a product-specific tax calculation. Simple mode assumes no exempt allocation. The default is one ₪3 million amount; switching back from advanced mode retains the total but discards the allocation and restores 15% on the whole withdrawal. These are UI/model assumptions, not changes to tax law.
 - Marginal tax, credit points, Bituach Leumi and health tax, and the קיבוע זכויות exemption cap are not modeled precisely.
 - קיבוע זכויות concerns determining a personal exemption; the model does not determine eligibility or promise full exemption. The 35%, 20%, and 5% haircuts are unchanged scenario assumptions, not statutory rates or a minimum penalty.
 - Annuity factors vary by fund, gender, survivor options, and guaranteed periods.

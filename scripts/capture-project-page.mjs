@@ -19,7 +19,7 @@ try {
     await page.goto('http://127.0.0.1:4173/');
     await page.getByRole('checkbox', { name: /קראתי והבנתי/ }).check();
     await page.getByRole('button', { name: 'אני מסכים/ה — כניסה לסימולטור', exact: true }).click();
-    await expect(page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true })).toHaveValue('1,800,000');
+    await expect(page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true })).toHaveValue('3,000,000');
     await expect(page.getByTestId('capital-chart')).toBeAttached();
     if (name === 'mobile') {
       await page.getByRole('button', { name: 'חשב סימולציה', exact: true }).click();

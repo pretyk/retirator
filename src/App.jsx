@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, BriefcaseBusiness, Calculator, ChartNoAxesCombined, Check, CircleHelp, Github, Info, Landmark, LockKeyhole, Minus, Plus, ShieldCheck, Shuffle, Target, TrendingUp, TriangleAlert, Wallet, X } from 'lucide-react';
 
-export const DEFAULT_STATE = { currentAge: 50, gender: 'male', bridgeStartAge: 52, pensionAge: 67, liquidSavings: 1800000, hishtalmut: 1200000, targetCapital: 500000, pensionBalance: 2500000, annualReturn: 4 };
+export const DEFAULT_STATE = { currentAge: 50, gender: 'male', bridgeStartAge: 52, pensionAge: 67, liquidSavings: 3000000, savingsBreakdown: false, hishtalmut: 0, portfolio: 3000000, otherSavings: 0, targetCapital: 500000, pensionBalance: 2500000, annualReturn: 4 };
 const GITHUB_URL = 'https://github.com/pretyk/retirator';
 const CONTACT_EMAIL = 'retiratorcom@gmail.com';
 const HOSTING_PRIVACY_SECTIONS = [
@@ -41,8 +41,9 @@ const integer = new Intl.NumberFormat('he-IL', { maximumFractionDigits: 0 });
 const money = (value) => value === null ? '—' : `₪${integer.format(value)}`;
 const compact = (value) => Math.abs(value) >= 1000000 ? `${number.format(value / 1000000)} מ׳` : `${integer.format(value / 1000)} א׳`;
 const CAPITAL_MAX = 100000000;
-const LIQUID_ASSET_MAX = 10000000;
-const totalLiquidCapital = (s) => (Math.round(s.liquidSavings * 100) + Math.round(s.hishtalmut * 100)) / 100;
+const LIQUID_ASSET_MAX = 20000000;
+const sumMoney = (...values) => values.reduce((sum, value) => sum + Math.round(value * 100), 0) / 100;
+const totalLiquidCapital = (s) => s.savingsBreakdown ? sumMoney(s.hishtalmut, s.portfolio, s.otherSavings) : s.liquidSavings;
 
 export function taxStatus(gender, age) {
   const officialAge = gender === 'female' ? 65 : 67;
@@ -53,13 +54,18 @@ export function taxStatus(gender, age) {
 
 export function validateState(s) {
   const issues = [];
-  const ranges = { currentAge: [25, 70], bridgeStartAge: [25, 70], pensionAge: [50, 75], annualReturn: [0, 10], liquidSavings: [0, LIQUID_ASSET_MAX], hishtalmut: [0, LIQUID_ASSET_MAX], targetCapital: [0, CAPITAL_MAX], pensionBalance: [0, CAPITAL_MAX] };
+  const savingsRanges = s.savingsBreakdown
+    ? { hishtalmut: [0, LIQUID_ASSET_MAX], portfolio: [0, LIQUID_ASSET_MAX], otherSavings: [0, LIQUID_ASSET_MAX] }
+    : { liquidSavings: [0, LIQUID_ASSET_MAX] };
+  const ranges = { currentAge: [25, 70], bridgeStartAge: [25, 70], pensionAge: [50, 75], annualReturn: [0, 10], ...savingsRanges, targetCapital: [0, CAPITAL_MAX], pensionBalance: [0, CAPITAL_MAX] };
   for (const [key, [min, max]] of Object.entries(ranges)) {
     if (!Number.isFinite(s[key]) || s[key] < min || s[key] > max) issues.push('אחד הנתונים מחוץ לטווח המותר.');
     else if (key.endsWith('Age') && !Number.isInteger(s[key])) issues.push('יש להזין גיל בשנים שלמות.');
   }
   if (!['male', 'female'].includes(s.gender)) issues.push('יש לבחור מין לחישוב גיל הפרישה.');
-  if (s.targetCapital > totalLiquidCapital(s)) issues.push('יעד ההון בגיל משיכת הפנסיה לא יכול להיות גבוה מסך החיסכון הנזיל וקרן ההשתלמות כיום.');
+  if (typeof s.savingsBreakdown !== 'boolean') issues.push('יש לבחור מצב הזנת חיסכון.');
+  if (totalLiquidCapital(s) > LIQUID_ASSET_MAX) issues.push('סך החיסכון הנזיל לא יכול להיות גבוה מ־20,000,000 ₪.');
+  if (s.targetCapital > totalLiquidCapital(s)) issues.push('יעד ההון בגיל משיכת הפנסיה לא יכול להיות גבוה מסך החיסכון הנזיל כיום.');
   if (s.bridgeStartAge < s.currentAge) issues.push('גיל הפסקת העבודה לא יכול להיות לפני הגיל הנוכחי.');
   if (s.pensionAge < s.bridgeStartAge) issues.push('גיל משיכת הפנסיה חייב להיות שווה לגיל הפסקת העבודה או מאוחר ממנו.');
   return [...new Set(issues)];
@@ -81,7 +87,8 @@ export function calculate(s) {
   const startingCapital = totalLiquidCapital(s);
   const pv = startingCapital * (1 + s.annualReturn / 100) ** yearsWaiting;
   const gross = months === 0 ? null : pmt(pv, s.targetCapital, rate, months);
-  const taxableRatio = startingCapital === 0 ? 0 : s.liquidSavings / startingCapital;
+  const taxableCapital = s.savingsBreakdown ? sumMoney(s.portfolio, s.otherSavings) : startingCapital;
+  const taxableRatio = startingCapital === 0 ? 0 : taxableCapital / startingCapital;
   const bridgeTax = taxableRatio * 0.15;
   const net = gross === null ? null : gross > 0 ? gross * (1 - bridgeTax) : gross;
   const tax = taxStatus(s.gender, s.pensionAge);
@@ -362,7 +369,26 @@ function FormulaModal({ result, onClose }) {
     <dl className="formula-values"><div><dt>הון בתחילת הגישור · PV</dt><dd dir="ltr">{money(result.pv)}</dd></div><div><dt>הון לשימור · FV</dt><dd dir="ltr">{money(result.targetCapital)}</dd></div><div><dt>תשואה חודשית · r</dt><dd dir="ltr">{(result.rate * 100).toFixed(4)}%</dd></div><div><dt>מספר חודשים · N</dt><dd>{result.months}</dd></div><div><dt>משיכה חודשית ברוטו · PMT</dt><dd dir="ltr">{money(result.gross)}</dd></div></dl>
     <p>בתשואה אפס: <b dir="ltr">PMT = (PV − FV) / N</b>. כשאין תקופת גישור אין משיכה חודשית. תוצאה שלילית היא הפקדה חודשית נדרשת, ולא הכנסה.</p>
     <p>זהה בגודלו ל־<b dir="ltr">-PMT(r, N, PV, -FV, 0)</b> באקסל. לפני הגישור הפנסיה וההון צוברים תשואה שנתית; במהלך הגישור ההון צובר תשואה חודשית של התשואה השנתית חלקי 12, לפי המפרט.</p>
-    <div className="notice"><Info size={16} /><span>מס אפקטיבי משוער בגישור: {number.format(result.bridgeTax * 100)}%. הנחת 15% על החלק הנזיל בלבד, ו־0% על קרן השתלמות נזילה ומזכה. המס בפועל חל על הרווח החייב, לא על מלוא המשיכה.</span></div>
+    <div className="notice"><Info size={16} /><span>מס אפקטיבי משוער בגישור: <bdi dir="ltr">{number.format(result.bridgeTax * 100)}%</bdi>. במצב פשוט, הנחת <bdi dir="ltr">15%</bdi> על כלל המשיכה. במצב מתקדם, אותה הנחה על תיק השקעות וחיסכון אחר, ו־<bdi dir="ltr">0%</bdi> על קרן השתלמות נזילה ומזכה. המס בפועל תלוי ברווח החייב ובסוג החיסכון, ולא חל בהכרח על מלוא המשיכה.</span></div>
+  </ModalFrame>;
+}
+
+function ScenarioGuide({ onClose }) {
+  const example = { ...DEFAULT_STATE, currentAge: 50, bridgeStartAge: 50, pensionAge: 60, liquidSavings: 1200000, targetCapital: 0, annualReturn: 0 };
+  const result = calculate(example);
+  return <ModalFrame titleId="guide-title" descriptionId="guide-summary" className="scenario-guide" onClose={onClose}>
+    <div className="modal-top"><span className="section-icon"><CircleHelp size={22} /></span><button type="button" className="icon-button" onClick={onClose} aria-label="סגור דוגמה"><X size={20} /></button></div>
+    <span className="eyebrow">מדריך קצר להתחלה</span>
+    <h2 id="guide-title" tabIndex={-1} data-initial-focus>איך זה עובד? דוגמה פשוטה</h2>
+    <p id="guide-summary">דוגמה להמחשה בלבד, שאינה משנה את הנתונים שלך. נניח שמפסיקים לעבוד בגיל <bdi dir="ltr">50</bdi> ומתחילים למשוך פנסיה בגיל <bdi dir="ltr">60</bdi>.</p>
+    <ol className="guide-steps">
+      <li><strong>מזינים את החיסכון הזמין</strong><p>בדוגמה יש <bdi dir="ltr">{money(example.liquidSavings)}</bdi> בחיסכון נזיל, ללא החיסכון הפנסיוני. אפשר להזין סכום אחד, או לפרט קרן השתלמות, תיק השקעות וחיסכון אחר — הם נסכמים לאותו סך חיסכון.</p></li>
+      <li><strong>בוחרים תקופת גישור ויעד הון</strong><p>מגיל <bdi dir="ltr">50</bdi> עד <bdi dir="ltr">60</bdi> יש <bdi dir="ltr">{result.months}</bdi> חודשים. כדי לפשט, התשואה בדוגמה היא <bdi dir="ltr">0.0%</bdi> ויעד ההון בסוף הגישור הוא <bdi dir="ltr">{money(example.targetCapital)}</bdi>.</p></li>
+      <li><strong>קוראים את ההערכה החודשית</strong><p><bdi dir="ltr">{money(example.liquidSavings)} ÷ {result.months} = {money(result.gross)}</bdi> ברוטו לחודש. לאחר הנחת מס של <bdi dir="ltr">15%</bdi> במצב הפשוט, מתקבלים <bdi dir="ltr">{money(result.net)}</bdi> נטו משוער לחודש.</p></li>
+      <li><strong>מפרידים בין הגישור לפנסיה</strong><p>החיסכון הפנסיוני מחושב בנפרד ואינו מממן את הגישור. עם הנתונים שלך, לוחצים על ״חשב סימולציה״ כדי לעדכן את התוצאות ואת הגרף.</p></li>
+    </ol>
+    <div className="notice"><Info size={18} /><span>זו סימולציה, לא המלצה לפרישה או למשיכה. תשואה, מס וזכאות לפנסיה תלויים בנסיבות האישיות ובדין; התוצאות בפועל עשויות להיות שונות.</span></div>
+    <button type="button" className="calculate-button guide-dismiss" onClick={onClose}>חזרה לתרחיש שלי<ArrowLeft size={17} /></button>
   </ModalFrame>;
 }
 
@@ -411,7 +437,7 @@ export default function App() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [page, setPage] = useState(currentPage);
   const [accepted, setAccepted] = useState(false);
-  const [modal, setModal] = useState(false);
+  const [modal, setModal] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', id: 0 });
   const [announcement, setAnnouncement] = useState('');
   const resultsRef = useRef(null);
@@ -431,7 +457,7 @@ export default function App() {
   const invalid = !preview.valid || hasFieldErrors;
   const low = !committed.reachable || (committed.net !== null && committed.net < 5000) || committedState.pensionAge < 60;
   useEffect(() => {
-    const onNavigation = () => { setPage(currentPage()); setModal(false); };
+    const onNavigation = () => { setPage(currentPage()); setModal(null); };
     window.addEventListener('hashchange', onNavigation);
     return () => window.removeEventListener('hashchange', onNavigation);
   }, []);
@@ -450,6 +476,16 @@ export default function App() {
     return next;
   }), []);
   const validity = useCallback((name, value) => setFieldErrors((previous) => previous[name] === value ? previous : { ...previous, [name]: value }), []);
+  const savingsFields = draftState.savingsBreakdown ? ['hishtalmut', 'portfolio', 'otherSavings'] : ['liquidSavings'];
+  const savingsInvalid = savingsFields.some((name) => fieldErrors[name]) || totalLiquidCapital(draftState) > LIQUID_ASSET_MAX;
+  const toggleSavings = () => {
+    if (savingsInvalid) return;
+    setDraftState((previous) => {
+      const total = totalLiquidCapital(previous);
+      return { ...previous, savingsBreakdown: !previous.savingsBreakdown, liquidSavings: total, portfolio: total, hishtalmut: 0, otherSavings: 0 };
+    });
+    setFieldErrors((previous) => ({ ...previous, liquidSavings: false, hishtalmut: false, portfolio: false, otherSavings: false }));
+  };
   const field = (name, label, info, extra = {}) => <NumericField key={name} name={name} label={label} info={info} value={draftState[name]} onChange={change} onValidity={validity} {...extra} />;
   const commit = () => {
     if (invalid || !accepted) return;
@@ -471,15 +507,25 @@ export default function App() {
         <aside className="controls panel" aria-labelledby="controls-title">
           <div className="controls-header"><div><h2 id="controls-title">בונים את התרחיש שלך</h2><p>כל שינוי קטן פותח אפשרות חדשה</p></div><span className="icon-box"><Calculator size={20} /></span></div>
           <div className="fields-body">
+            <button type="button" className="guide-button" onClick={() => setModal('guide')}><CircleHelp size={20} aria-hidden="true" />דוגמה פשוטה — איך מתחילים?</button>
             <Section icon={BriefcaseBusiness} title="נתונים אישיים וציר זמן" index="01">
               <div className="gender-row"><div className="field-heading"><span id="gender-label">מין לצורך גיל פרישה</span><Tooltip text="המודל מניח גיל פרישה 67 לגבר ו־65 לאישה. גיל הפרישה לנשים עולה בהדרגה לפי תאריך הלידה; יש לבדוק זכאות אישית." /></div><div className="gender-toggle" role="group" aria-labelledby="gender-label">{[['male', 'גבר'], ['female', 'אישה']].map(([value, label]) => <button key={value} aria-pressed={draftState.gender === value} className={draftState.gender === value ? 'active' : ''} onClick={() => change('gender', value)}>{label}</button>)}</div></div>
               <div className="two-fields">{field('currentAge', 'גיל נוכחי', 'הגיל היום בשנים שלמות. ההון הקיים צובר תשואה עד הפסקת העבודה; לא נכללות הפקדות חדשות.', { min: 25, max: 70, step: 1, unit: 'שנים' })}{field('bridgeStartAge', 'גיל הפסקת עבודה - תחילת גישור', 'הגיל שבו מתחילים לממן הוצאות מההון הזמין, ללא הכנסה מעבודה. גיל זה לא יכול להיות לפני הגיל הנוכחי.', { min: draftState.currentAge, max: 70, step: 1, unit: 'שנים' })}</div>
               {field('pensionAge', 'גיל משיכת פנסיה', 'גיל תחילת הקצבה. מתחת ל־60 מוצג תרחיש אזהרה בלבד, ולא זכאות לקצבה. גיל הזכאות לפטור תלוי בדין ובנתונים האישיים.', { min: 50, max: 75, step: 1, unit: 'שנים', children: <TaxAlert gender={draftState.gender} age={draftState.pensionAge} /> })}
             </Section>
             <Section icon={Wallet} title="הון ונכסים לגישור" index="02">
-              {field('liquidSavings', 'חיסכון נזיל / תיק השקעות', 'תיק השקעות או חיסכון נזיל. במודל מנוכה מס אפקטיבי של 15% מהמשיכה היחסית מהתיק, כהנחה ל־25% מס על רכיב רווח של 60%.', { max: LIQUID_ASSET_MAX })}
-              {field('hishtalmut', 'קרן השתלמות', 'המודל מניח קרן נזילה ומשיכה פטורה ממס בכפוף לתקרות ולתנאי הדין. הפקדות מעבר לתקרה או קרן שטרם נזילה עשויות להיות חייבות במס.', { max: LIQUID_ASSET_MAX })}
-              {field('targetCapital', 'יעד הון להשאיר בגיל פנסיה', 'יעד לשימור בסוף הגישור, בערכי היום. היעד מוגבל לסך החיסכון הנזיל וקרן ההשתלמות כיום, ללא החיסכון הפנסיוני או תשואה עתידית.', { max: totalLiquidCapital(draftState) })}
+              {!draftState.savingsBreakdown && field('liquidSavings', 'חיסכון נזיל', 'סך הכסף הזמין לגישור, כולל קרן השתלמות נזילה אם יש, ללא פנסיה. במצב פשוט מנוכה מס משוער של 15% מכל המשיכה; אפשר לפרט במצב מתקדם.', { max: LIQUID_ASSET_MAX })}
+              <button type="button" className="savings-toggle" aria-expanded={draftState.savingsBreakdown} aria-controls="savings-breakdown" aria-describedby="savings-mode-help" disabled={savingsInvalid} onClick={toggleSavings}>{draftState.savingsBreakdown ? <Minus size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}{draftState.savingsBreakdown ? 'חזרה לסכום אחד' : 'מצב מתקדם — פירוט החיסכון'}</button>
+              <p id="savings-mode-help" className="savings-help">{draftState.savingsBreakdown ? <>תיק השקעות וחיסכון אחר: הנחת מס של <bdi dir="ltr">15%</bdi>. קרן השתלמות נזילה ומזכה: <bdi dir="ltr">0%</bdi>. חזרה לסכום אחד מאחדת את הפירוט ומחזירה הנחת <bdi dir="ltr">15%</bdi> לכל המשיכה.</> : <>ללא פירוט, הנחת המס היא <bdi dir="ltr">15%</bdi> לכל המשיכה. במעבר לפירוט, הסכום יופיע תחילה בתיק ההשקעות; אפשר לחלק אותו בין השדות.</>}</p>
+              <div id="savings-breakdown" hidden={!draftState.savingsBreakdown}>
+                {draftState.savingsBreakdown && <>
+                  {field('hishtalmut', 'קרן השתלמות', 'המודל מניח קרן נזילה ומשיכה פטורה ממס בכפוף לתקרות ולתנאי הדין. הפקדות מעבר לתקרה או קרן שטרם נזילה עשויות להיות חייבות במס.', { max: LIQUID_ASSET_MAX })}
+                  {field('portfolio', 'תיק השקעות', 'החלק הזמין בתיק ההשקעות. במודל מנוכה מס אפקטיבי משוער של 15% מהמשיכה היחסית ממנו, כהנחה ל־25% מס על רכיב רווח של 60%.', { max: LIQUID_ASSET_MAX })}
+                  {field('otherSavings', 'חיסכון אחר', 'חיסכון נזיל נוסף שלא נכלל בשדות האחרים. המודל משתמש באותה הנחת מס של 15%; זה אינו חישוב מס לפי סוג המוצר.', { max: LIQUID_ASSET_MAX })}
+                  <div className="savings-total" role="status"><span>סך החיסכון הנזיל</span><strong dir="ltr" data-testid="savings-total">{savingsInvalid ? '—' : `₪${number.format(totalLiquidCapital(draftState))}`}</strong></div>
+                </>}
+              </div>
+              {field('targetCapital', 'יעד הון להשאיר בגיל פנסיה', 'יעד לשימור בסוף הגישור, בערכי היום. היעד מוגבל לסך החיסכון הנזיל כיום, כולל הפירוט אם הוזן, ללא החיסכון הפנסיוני או תשואה עתידית.', { max: totalLiquidCapital(draftState) })}
               {field('annualReturn', 'תשואה שנתית ריאלית צפויה', 'תשואה משוערת לאחר אינפלציה ודמי ניהול, לפני מס משיכה. התשואה קבועה במודל; הפסדים וסיכון רצף תשואות אינם נכללים.', { min: 0, max: 10, step: 0.5, unit: '%' })}
             </Section>
             <Section icon={Landmark} title="חיסכון פנסיוני" index="03">{field('pensionBalance', 'צבירה נוכחית בקרן הפנסיה', 'היתרה הקיימת בקרן, ללא הפקדות עתידיות. מקדם ההמרה והמס הם אומדנים בלבד; אינם הצעה או התחייבות של קרן פנסיה.')}</Section>
@@ -489,7 +535,7 @@ export default function App() {
         <div className="results" ref={resultsRef} aria-label="תוצאות הסימולציה">
           <div className={`results-status ${isDirty ? 'dirty' : ''}`} role="status">{isDirty ? <><span className="live-dot" />מצב טיוטה - לחץ על חישוב לעדכון</> : <><Check size={15} /> התרחיש שלך מעודכן <span>כל הסכומים בערכי היום</span></>}</div>
           <section key={feedback.id} className={`hero-card ${low ? 'deficit' : ''} ${feedback.type === 'shake' ? 'shake' : ''}`} data-testid="bridge-card">
-            <div className="hero-top"><span className="phase-badge"><span className="live-dot" />תקופת הגישור</span><button className="fx-button" aria-label="הצג נוסחת חישוב" onClick={() => setModal(true)}><span dir="ltr">ƒx</span></button></div>
+            <div className="hero-top"><span className="phase-badge"><span className="live-dot" />תקופת הגישור</span><button className="fx-button" aria-label="הצג נוסחת חישוב" onClick={() => setModal('formula')}><span dir="ltr">ƒx</span></button></div>
             <h2>החופש שלך, במספר חודשי.</h2><p className="hero-subtitle">נטו משוער לכיס <span>·</span> מגיל {committedState.bridgeStartAge} עד {committedState.pensionAge}</p>
             <div className="hero-amount"><span data-testid="bridge-net" dir="ltr">{money(committed.net)}</span><small>/ חודש</small></div>
             <Delta dirty={isDirty} unavailable={!preview.valid || hasFieldErrors || preview.net === null || committed.net === null} value={preview.valid ? preview.net - committed.net : 0} />
@@ -510,12 +556,14 @@ export default function App() {
     <div className="footer-container"><footer className="site-footer"><span dir="ltr">Retirator</span><nav aria-label="קישורי אתר"><a href="#privacy">פרטיות</a><a href="#disclaimer">הבהרה ותנאי שימוש</a><a href="#accessibility">הצהרת נגישות</a><a href="/THIRD_PARTY_NOTICES.txt">רישיונות וזכויות יוצרים</a><a className="github-link" href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label="תרומה לקוד ב־GitHub — נפתח בלשונית חדשה"><Github size={15} />תרומה לקוד</a></nav><span><ShieldCheck size={14} /> המידע שלך נשאר אצלך</span></footer></div>
     <div className="sr-only" role="status" aria-live="polite">{announcement}</div>
     {page === 'simulator' && !accepted && <EntryDisclaimer onAccept={() => setAccepted(true)} />}
-    {page === 'simulator' && accepted && modal && <FormulaModal result={{ ...committed, targetCapital: committedState.targetCapital }} onClose={() => setModal(false)} />}
+    {page === 'simulator' && accepted && modal === 'formula' && <FormulaModal result={{ ...committed, targetCapital: committedState.targetCapital }} onClose={() => setModal(null)} />}
+    {page === 'simulator' && accepted && modal === 'guide' && <ScenarioGuide onClose={() => setModal(null)} />}
     {feedback.type === 'confetti' && <div key={feedback.id} className="confetti" data-testid="confetti" aria-hidden="true">{Array.from({ length: 60 }, (_, i) => <i key={i} style={{ '--x': `${(i * 37) % 100}vw`, '--drift': `${(i % 2 ? 1 : -1) * (30 + i % 100)}px`, '--delay': `${i % 12 * 0.035}s`, '--rotation': `${i * 47}deg`, background: ['#818cf8', '#34d399', '#fbbf24', '#f9a8d4'][i % 4] }} />)}</div>}
   </div>;
 }
 
 const styles = `
+.guide-button,.savings-toggle{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;width:100%;padding:10px 12px;border:1px solid #6366f1;border-radius:8px;color:#e0e7ff;background:#6366f11a;font-size:var(--text-body);line-height:1.6}.guide-button{margin-bottom:24px}.savings-toggle{margin:12px 0;text-align:start}.savings-toggle:disabled{opacity:.6;cursor:not-allowed}.guide-button svg,.savings-toggle svg{flex-shrink:0}.savings-help{font-size:var(--text-small);line-height:1.8;color:#b5c1d7;margin:12px 0 20px}.savings-total{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:16px;margin:16px 0 24px;background:#6366f11a;border:1px solid #39435a;border-radius:8px;font-size:var(--text-body)}.savings-total strong{font-variant-numeric:tabular-nums}.guide-steps{padding-inline-start:24px;font-size:var(--text-body);line-height:1.8}.guide-steps li{margin:18px 0;padding-inline-start:4px}.guide-steps strong{color:#e0e7ff}.guide-dismiss{margin-top:24px}
 .chart-inspection{margin:16px 0;font-size:var(--text-body);line-height:1.6}.chart-inspection label{font-weight:600}.chart-inspection p{color:#b5c1d7;font-size:var(--text-small);margin-top:8px}.chart-point-range{display:block;width:100%;height:44px;margin:8px 0;accent-color:#a5b4fc;cursor:pointer}.chart-data summary{cursor:pointer;min-height:44px;padding:10px 0;color:#c7d2fe}.chart-data summary:focus-visible,.chart-table-scroll:focus-visible{outline:2px solid #a5b4fc;outline-offset:4px}.chart-table-scroll{max-height:22rem;overflow:auto}.chart-data table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:var(--text-small);font-variant-numeric:tabular-nums}.chart-data caption{padding:10px 0;text-align:start;color:#b5c1d7}.chart-data th,.chart-data td{padding:12px 4px;border-bottom:1px solid #39435a;text-align:start;overflow-wrap:anywhere}.chart-data th:first-child{width:20%}
 .privacy-more{display:flex;align-items:center;gap:5px;margin-top:5px;text-decoration:underline;text-underline-offset:3px;color:#a7f3d0}
 .text-link{color:#c7d2fe;text-decoration:underline;text-underline-offset:4px;font-size:12px;line-height:1.9}

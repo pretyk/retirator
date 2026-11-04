@@ -99,18 +99,18 @@ test('privacy badge navigation preserves draft, committed results and in-memory 
   await page.goto('/');
   await accept(page);
   const oldNet = await page.getByTestId('bridge-net').textContent();
-  await page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true }).fill('2,400,000');
+  await page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true }).fill('2,400,000');
   await page.getByRole('link', { name: 'למידע נוסף על הפרטיות' }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('המידע שלך נשאר אצלך');
   await page.goBack();
   await expect(gate(page)).toHaveCount(0);
-  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true })).toHaveValue('2,400,000');
+  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true })).toHaveValue('2,400,000');
   await expect(page.getByTestId('bridge-net')).toHaveText(oldNet);
   await expect(page.getByText('מצב טיוטה - לחץ על חישוב לעדכון')).toBeVisible();
   await page.reload();
   await expect(gate(page)).toBeVisible();
   await accept(page);
-  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true })).toHaveValue('1,800,000');
+  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true })).toHaveValue('3,000,000');
   await noStorage(page);
 });
 
@@ -170,14 +170,14 @@ test('accessibility navigation preserves draft and acceptance without data reque
   await page.goto('/');
   await accept(page);
   const before = await page.getByTestId('bridge-net').textContent();
-  await page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true }).fill('2,345,678');
+  await page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true }).fill('2,345,678');
   const requests = [];
   page.on('request', request => requests.push(request.url()));
   await page.locator('footer').getByRole('link', { name: 'הצהרת נגישות', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('הצהרת נגישות');
   await page.goBack();
   await expect(gate(page)).toHaveCount(0);
-  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true })).toHaveValue('2,345,678');
+  await expect(page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true })).toHaveValue('2,345,678');
   await expect(page.getByTestId('bridge-net')).toHaveText(before);
   expect(requests).toEqual([]);
   await noStorage(page);
@@ -200,7 +200,7 @@ test('agreement and legal-page visits do not make data requests or write storage
   await page.getByRole('link', { name: 'פרטיות ואי־מעקב', exact: true }).click();
   await page.getByRole('link', { name: 'חזרה לסימולטור', exact: true }).first().click();
   await accept(page);
-  await page.getByRole('textbox', { name: 'חיסכון נזיל / תיק השקעות', exact: true }).fill('2,345,678');
+  await page.getByRole('textbox', { name: 'חיסכון נזיל', exact: true }).fill('2,345,678');
   await page.getByRole('button', { name: 'חשב סימולציה', exact: true }).click();
   await expect(page).toHaveURL(/\/#$/);
   expect(requests).toEqual([]);

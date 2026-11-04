@@ -93,7 +93,8 @@ for (const width of [320, 360, 390, 721, 1440]) {
     await page.evaluate(() => { document.documentElement.style.fontSize = '125%'; });
     await expect(page.getByRole('textbox', { name: 'גיל נוכחי', exact: true })).toHaveCSS('font-size', '25px');
     await expect(page.locator('.field-heading').first()).toHaveCSS('font-size', '22.5px');
-    for (const [name, value] of [['liquidSavings', '9999999.99'], ['hishtalmut', '10000000'], ['pensionBalance', '100000000'], ['pensionBalance', '99999999.99']]) {
+    await page.getByRole('button', { name: 'מצב מתקדם — פירוט החיסכון', exact: true }).click();
+    for (const [name, value] of [['portfolio', '9999999.99'], ['hishtalmut', '10000000'], ['otherSavings', '0.01'], ['pensionBalance', '100000000'], ['pensionBalance', '99999999.99']]) {
       const input = page.locator(`input[name="${name}"]`);
       await input.fill(value);
       await input.blur();

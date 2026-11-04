@@ -260,6 +260,21 @@ Inline styles are required by the single-file design. Do not add analytics.
 - Changes update **draft** values, tax alerts, and monthly delta previews.
   Results, chart, and formula-modal variables stay **committed** until clicking
   **חשב סימולציה**. Invalid inputs and timelines explicitly block that action.
+- Start with one **חיסכון נזיל** amount, including all available bridge savings
+  but excluding pension assets. **מצב מתקדם — פירוט החיסכון** replaces it with
+  qualifying liquid hishtalmut, an investment portfolio, and other liquid savings.
+  Their sum is the bridge capital, not an addition to the simple amount.
+  Opening advanced mode initially places the amount in the portfolio; redistribute
+  it as appropriate. Returning to one amount retains the total, discards the
+  breakdown, and restores the simple 15% tax assumption. Invalid savings must be
+  corrected before switching modes. The existing combined ceiling of ₪20 million
+  applies in both modes; each category can use that ceiling, but their sum cannot
+  exceed it.
+- **דוגמה פשוטה — איך מתחילים?** opens a keyboard-accessible guide without
+  replacing draft or committed data: ages 50–60, ₪1.2 million, zero return and
+  reserve yield ₪10,000 gross / ₪8,500 estimated net per month under the simple
+  assumption. The guide separates bridge assets from pension assets and is
+  illustrative, not advice.
 - The chart follows actual monthly end-of-period withdrawals, with an
   independently compounded pension balance. Point at or tap the chart to inspect
   ages, or use the labeled age slider: arrow keys move one month, Home selects
@@ -291,10 +306,13 @@ inflation and fees, but before withdrawal taxes.
    `PMT = (PV * (1+r)^N - FV) * r / ((1+r)^N - 1)`.
    At zero return: `(PV - FV) / N`.
    This equals `-PMT(r, N, PV, -FV, 0)` in Excel.
-3. Liquid savings' proportional withdrawals have an assumed effective tax of
-   15% (25% tax on a hypothetical 60% gain share). Hishtalmut is assumed liquid
-   and eligible for exemption. Real tax depends on cost basis, eligible deposits,
-   losses, withdrawal rules, and other circumstances.
+3. Simple mode assumes 15% effective tax on the entire bridge withdrawal.
+   Advanced mode applies the same 15% to the portfolio and other-savings share
+   (25% tax on a hypothetical 60% gain share); explicitly entered hishtalmut is
+   assumed liquid and eligible for exemption. Other savings have no product-specific
+   tax treatment in this simplified model. Real tax depends on cost basis, eligible
+   deposits, losses, withdrawal rules, and other circumstances. Defaults now show
+   ₪3 million as one simple amount, without an assumed exempt allocation.
 4. Pension conversion factor: 200 at age 67, plus 4 per earlier year,
    minus 3 per later year. It is not an insurer quotation.
 5. Pension net uses **illustrative effective haircuts** of 35% before age 60,
@@ -315,12 +333,13 @@ inflation and fees, but before withdrawal taxes.
 **Boundary behavior:** pension age may equal bridge start (no bridge income).
 It cannot precede bridge start. Increasing current age moves bridge start
 forward if needed, without silently changing pension age. The pension-age reserve
-target cannot exceed current liquid savings plus Keren Hishtalmut, excluding
-pension assets and projected returns. Its slider and steppers use this combined
-limit. An excessive target, including after reducing either asset balance, shows
+target cannot exceed current total liquid savings, including all three categories
+when advanced mode is enabled, but excluding pension assets and projected returns.
+Its slider and steppers use this combined limit. An excessive target, including
+after reducing any asset balance, shows
 an error and blocks calculation without silently changing the target or committed
 results. Zero balances and zero returns are supported.
-Liquid savings and Keren Hishtalmut inputs each permit amounts up to ₪10 million.
+Total liquid savings permit up to ₪20 million, in one amount or across the breakdown.
 The pension balance input retains its ₪100 million maximum.
 
 ### PRD corrections

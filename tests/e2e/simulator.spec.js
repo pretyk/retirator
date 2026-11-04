@@ -3,6 +3,11 @@ import AxeBuilder from '@axe-core/playwright';
 
 const field = (page, label) => page.getByRole('textbox', { name: label, exact: true });
 const commit = (page) => page.getByRole('button', { name: 'חשב סימולציה', exact: true });
+const enterBreakdown = async (page) => {
+  await page.getByRole('button', { name: 'מצב מתקדם — פירוט החיסכון', exact: true }).click();
+  await field(page, 'תיק השקעות').fill('1,800,000');
+  await field(page, 'קרן השתלמות').fill('1,200,000');
+};
 const setSlider = async (page, label, value) => {
   const slider = page.getByRole('slider', { name: `${label} - מחוון`, exact: true });
   await slider.evaluate((element, next) => {
@@ -23,16 +28,16 @@ test('loads Hebrew RTL, privacy badge and complete numeric controls', async ({ p
   await expect(page.locator('html')).toHaveAttribute('lang', 'he');
   await expect(page.getByText('הנתונים מחושבים בדפדפן שלך בלבד — לא נשלחים לשרת')).toBeVisible();
   await expect(page.getByText('100% אנונימי', { exact: false })).toHaveCount(0);
-  await expect(page.getByRole('slider')).toHaveCount(9);
-  await expect(page.getByRole('textbox')).toHaveCount(8);
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('1,800,000');
+  await expect(page.getByRole('slider')).toHaveCount(8);
+  await expect(page.getByRole('textbox')).toHaveCount(7);
+  await expect(field(page, 'חיסכון נזיל')).toHaveValue('3,000,000');
   await expect(page.getByTestId('bridge-net')).not.toHaveText(/NaN|Infinity|—/);
 });
 
 test('keeps results and chart locked, then commits draft delta', async ({ page }) => {
   const before = await page.getByTestId('bridge-net').textContent();
   const chart = await page.getByTestId('capital-chart').innerHTML();
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('2,800,000');
+  await field(page, 'חיסכון נזיל').fill('4,000,000');
   await expect(page.getByText('מצב טיוטה - לחץ על חישוב לעדכון')).toBeVisible();
   await expect(page.getByTestId('bridge-net')).toHaveText(before);
   expect(await page.getByTestId('capital-chart').innerHTML()).toBe(chart);
@@ -133,7 +138,7 @@ test('rotates every punchline by keyboard without repeating or changing the scen
     'יצאתי להפסקה קצרה. נדבר בעוד עשור.',
   ];
   const before = await page.getByTestId('bridge-net').textContent();
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('2,800,000');
+  await field(page, 'חיסכון נזיל').fill('2,800,000');
   await expect(heading).toHaveText(phrases[0]);
   await expect(heading).toHaveAttribute('aria-live', 'polite');
   await expect(heading).toHaveAttribute('aria-atomic', 'true');
@@ -144,7 +149,7 @@ test('rotates every punchline by keyboard without repeating or changing the scen
     await expect(button).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('2,800,000');
+  await expect(field(page, 'חיסכון נזיל')).toHaveValue('2,800,000');
   await expect(page.getByTestId('bridge-net')).toHaveText(before);
   await expect(page.getByText('מצב טיוטה - לחץ על חישוב לעדכון')).toBeVisible();
 });
@@ -160,10 +165,10 @@ test('randomizes the initial punchline and avoids repeats at the upper random bo
 });
 
 test('steppers and range update both paired controls with formatted amounts', async ({ page }) => {
-  await page.getByRole('button', { name: 'הגדל חיסכון נזיל / תיק השקעות', exact: true }).click();
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('1,810,000');
-  await page.getByRole('button', { name: 'הקטן חיסכון נזיל / תיק השקעות', exact: true }).click();
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('1,800,000');
+  await page.getByRole('button', { name: 'הגדל חיסכון נזיל', exact: true }).click();
+  await expect(field(page, 'חיסכון נזיל')).toHaveValue('3,010,000');
+  await page.getByRole('button', { name: 'הקטן חיסכון נזיל', exact: true }).click();
+  await expect(field(page, 'חיסכון נזיל')).toHaveValue('3,000,000');
   await setSlider(page, 'תשואה שנתית ריאלית צפויה', 0);
   await expect(field(page, 'תשואה שנתית ריאלית צפויה')).toHaveValue('0');
   await commit(page).click();
@@ -171,10 +176,10 @@ test('steppers and range update both paired controls with formatted amounts', as
 });
 
 test('blocks malformed amounts and invalid timelines with explicit Hebrew errors', async ({ page }) => {
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('1,2,3');
+  await field(page, 'חיסכון נזיל').fill('1,2,3');
   await expect(commit(page)).toBeDisabled();
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveAttribute('aria-invalid', 'true');
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('1,800,000');
+  await expect(field(page, 'חיסכון נזיל')).toHaveAttribute('aria-invalid', 'true');
+  await field(page, 'חיסכון נזיל').fill('1,800,000');
   await field(page, 'גיל משיכת פנסיה').fill('50');
   await expect(page.getByTestId('tax-alert')).toHaveClass(/danger/);
   await expect(commit(page)).toBeDisabled();
@@ -183,34 +188,40 @@ test('blocks malformed amounts and invalid timelines with explicit Hebrew errors
   await expect(commit(page)).toBeEnabled();
 });
 
-for (const label of ['חיסכון נזיל / תיק השקעות', 'קרן השתלמות']) {
-  test(`caps ${label} at 10 million across text, stepper and slider controls`, async ({ page }) => {
+for (const label of ['חיסכון נזיל', 'קרן השתלמות', 'תיק השקעות', 'חיסכון אחר']) {
+  test(`caps ${label} at 20 million across text, stepper and slider controls`, async ({ page }) => {
+    if (label !== 'חיסכון נזיל') {
+      await enterBreakdown(page);
+      await field(page, 'תיק השקעות').fill('0');
+      await field(page, 'קרן השתלמות').fill('0');
+      await field(page, 'יעד הון להשאיר בגיל פנסיה').fill('0');
+    }
     const input = field(page, label);
     const slider = page.getByRole('slider', { name: `${label} - מחוון`, exact: true });
     const increase = page.getByRole('button', { name: `הגדל ${label}`, exact: true });
     const before = await page.getByTestId('bridge-net').textContent();
-    await expect(slider).toHaveAttribute('max', '10000000');
-    for (const value of ['10,000,000.01', '10000001']) {
+    await expect(slider).toHaveAttribute('max', '20000000');
+    for (const value of ['20,000,000.01', '20000001']) {
       await input.fill(value);
       await expect(input).toHaveAttribute('aria-invalid', 'true');
-      await expect(page.getByRole('alert').filter({ hasText: 'יש להזין מספר בין 0 ל־10,000,000' })).toBeVisible();
+      await expect(page.getByRole('alert').filter({ hasText: 'יש להזין מספר בין 0 ל־20,000,000' })).toBeVisible();
       await expect(commit(page)).toBeDisabled();
       await expect(page.getByTestId('bridge-net')).toHaveText(before);
     }
-    await input.fill('10,000,000');
+    await input.fill('20,000,000');
     await expect(input).toHaveAttribute('aria-invalid', 'false');
     await expect(commit(page)).toBeEnabled();
     await expect(increase).toBeDisabled();
-    await expect(slider).toHaveValue('10000000');
-    await input.fill('9,999,999.99');
+    await expect(slider).toHaveValue('20000000');
+    await input.fill('19,999,999.99');
     await increase.click();
-    await expect(input).toHaveValue('10,000,000');
+    await expect(input).toHaveValue('20,000,000');
     await expect(increase).toBeDisabled();
     await page.getByRole('button', { name: `הקטן ${label}`, exact: true }).click();
-    await expect(input).toHaveValue('9,990,000');
+    await expect(input).toHaveValue('19,990,000');
     await slider.focus();
     await page.keyboard.press('End');
-    await expect(input).toHaveValue('10,000,000');
+    await expect(input).toHaveValue('20,000,000');
     await expect(increase).toBeDisabled();
     await commit(page).click();
     await expect(page.getByTestId('bridge-net')).not.toHaveText(before);
@@ -263,8 +274,13 @@ test('caps the reserve across text, steppers and slider without changing committ
   await expect(page.locator('.metric-card').filter({ hasText: 'כרית הביטחון שלך' })).toContainText('₪3,000,000');
 });
 
-for (const label of ['חיסכון נזיל / תיק השקעות', 'קרן השתלמות']) {
+for (const label of ['תיק השקעות', 'קרן השתלמות', 'חיסכון אחר']) {
   test(`revalidates the reserve when ${label} changes`, async ({ page }) => {
+    await enterBreakdown(page);
+    if (label === 'חיסכון אחר') {
+      await field(page, 'תיק השקעות').fill('0');
+      await field(page, 'חיסכון אחר').fill('1,800,000');
+    }
     const target = field(page, 'יעד הון להשאיר בגיל פנסיה');
     const slider = page.getByRole('slider', { name: 'יעד הון להשאיר בגיל פנסיה - מחוון', exact: true });
     const before = await page.getByTestId('bridge-net').textContent();
@@ -286,8 +302,9 @@ for (const label of ['חיסכון נזיל / תיק השקעות', 'קרן הש
     await target.blur();
     await expect(target).toHaveValue('3,000,000.01');
     await target.fill('0');
-    await field(page, 'חיסכון נזיל / תיק השקעות').fill('0');
+    await field(page, 'תיק השקעות').fill('0');
     await field(page, 'קרן השתלמות').fill('0');
+    await field(page, 'חיסכון אחר').fill('0');
     await expect(slider).toHaveAttribute('max', '0');
     await expect(slider).toHaveValue('0');
     await expect(commit(page)).toBeEnabled();
@@ -297,7 +314,8 @@ for (const label of ['חיסכון נזיל / תיק השקעות', 'קרן הש
 }
 
 test('reserve steppers respect a fractional combined asset limit', async ({ page }) => {
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('1,800,000.01');
+  await enterBreakdown(page);
+  await field(page, 'תיק השקעות').fill('1,800,000.01');
   await field(page, 'קרן השתלמות').fill('1,200,000.13');
   const input = field(page, 'יעד הון להשאיר בגיל פנסיה');
   await input.fill('3,000,000');
@@ -309,8 +327,7 @@ test('reserve steppers respect a fractional combined asset limit', async ({ page
 
 for (const [amount, expected] of [['5000', '5,000'], ['3000000.14', '3,000,000.14']]) {
   test(`reserve slider reaches the exact ${amount} endpoint`, async ({ page }) => {
-    await field(page, 'חיסכון נזיל / תיק השקעות').fill(amount);
-    await field(page, 'קרן השתלמות').fill('0');
+    await field(page, 'חיסכון נזיל').fill(amount);
     const input = field(page, 'יעד הון להשאיר בגיל פנסיה');
     const slider = page.getByRole('slider', { name: 'יעד הון להשאיר בגיל פנסיה - מחוון', exact: true });
     await slider.focus();
@@ -370,7 +387,7 @@ test('does not send data, persist inputs, or produce runtime errors', async ({ p
   page.on('pageerror', (error) => failures.push(error.message));
   await page.reload();
   await acceptDisclaimer(page);
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('2,222,222');
+  await field(page, 'חיסכון נזיל').fill('2,222,222');
   await commit(page).click();
   await expect(page.getByTestId('bridge-net')).toBeVisible();
   expect(external).toEqual([]);
@@ -378,7 +395,7 @@ test('does not send data, persist inputs, or produce runtime errors', async ({ p
   expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length, cookies: document.cookie }))).toEqual({ local: 0, session: 0, cookies: '' });
   await page.reload();
   await acceptDisclaimer(page);
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('1,800,000');
+  await expect(field(page, 'חיסכון נזיל')).toHaveValue('3,000,000');
 });
 
 test('honors reduced motion', async ({ page }) => {
@@ -413,10 +430,10 @@ test('handles maximum current age and a collapsed bridge-start slider range', as
 });
 
 test('preserves custom input precision and rejects hidden fractional digits', async ({ page }) => {
-  await field(page, 'חיסכון נזיל / תיק השקעות').fill('1,800,000.25');
+  await field(page, 'חיסכון נזיל').fill('1,800,000.25');
   await field(page, 'תשואה שנתית ריאלית צפויה').fill('4.25');
   await field(page, 'תשואה שנתית ריאלית צפויה').blur();
-  await expect(field(page, 'חיסכון נזיל / תיק השקעות')).toHaveValue('1,800,000.25');
+  await expect(field(page, 'חיסכון נזיל')).toHaveValue('1,800,000.25');
   await expect(field(page, 'תשואה שנתית ריאלית צפויה')).toHaveValue('4.25');
   await expect(commit(page)).toBeEnabled();
   await field(page, 'תשואה שנתית ריאלית צפויה').fill('4.251');

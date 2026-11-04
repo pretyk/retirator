@@ -99,7 +99,7 @@ for (const [name, device] of [['default phone', {}], ['small 360px phone', SMALL
       await expect(dock(page)).toBeInViewport();
       await expect(page.getByTestId('dock-preview')).toHaveCount(0);
 
-      await increase(page, 'חיסכון נזיל / תיק השקעות').tap();
+      await increase(page, 'חיסכון נזיל').tap();
       const preview = page.getByTestId('dock-preview');
       await expect(preview).toBeInViewport();
       await expect(preview).toContainText('+');

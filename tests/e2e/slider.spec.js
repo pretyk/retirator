@@ -17,7 +17,7 @@ for (const [name, viewport, isMobile] of [
       expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches)).toBe(true);
 
       const fields = page.locator('.numeric-field');
-      await expect(fields).toHaveCount(8);
+      await expect(fields).toHaveCount(7);
       for (const field of await fields.all()) {
         const slider = field.getByRole('slider');
         await slider.evaluate((element) => element.scrollIntoView({ block: 'center' }));
